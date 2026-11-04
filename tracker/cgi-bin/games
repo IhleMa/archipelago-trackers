@@ -1,0 +1,21 @@
+#!/bin/sh
+# Lists the installed game trackers: every games/<folder>/game.json, skipping folders that start with _ or .
+echo "Content-Type: application/json"
+echo "Cache-Control: no-store"
+echo
+HERE=${SCRIPT_FILENAME%/*}
+[ -n "$HERE" ] && [ "$HERE" != "$SCRIPT_FILENAME" ] || HERE=$(pwd)
+cd "$HERE/../games" 2>/dev/null || { echo "[]"; exit 0; }
+printf '['
+first=1
+for f in */game.json; do
+  [ -f "$f" ] || continue
+  d=${f%/game.json}
+  case "$d" in _*|.*|*\"*|*\\*) continue ;; esac
+  [ "$first" = 1 ] || printf ','
+  first=0
+  printf '{"dir":"%s","meta":' "$d"
+  cat "$f"
+  printf '}'
+done
+printf ']\n'

@@ -1,0 +1,132 @@
+{
+    "_comment": "DO NOT EDIT: FILE GENERATED AUTOMATICALLY BY PTERODACTYL PANEL - PTERODACTYL.IO",
+    "meta": {
+        "version": "PTDL_v2",
+        "update_url": null
+    },
+    "exported_at": "2026-11-04T14:08:33+01:00",
+    "name": "Archipelago Multiworld",
+    "author": "wizzzle.wizzzle@gmail.com",
+    "description": "Archipelago multi-game randomizer server (ArchipelagoServer \/ MultiServer). Upload a generated AP_*.zip seed to the seeds\/ folder and start.",
+    "features": [],
+    "docker_images": {
+        "Debian": "ghcr.io\/parkervcp\/yolks:debian"
+    },
+    "file_denylist": [],
+    "startup": ".\/start.sh",
+    "config": {
+        "files": "{}",
+        "startup": "{\r\n    \"done\": \"Hosting game at\"\r\n}",
+        "logs": "{}",
+        "stop": "\/exit"
+    },
+    "scripts": {
+        "installation": {
+            "script": "#!\/bin\/bash\n# Archipelago install script (runs in ghcr.io\/parkervcp\/installers:debian)\nset -e\napt-get update -qq && apt-get install -y -qq curl jq tar ca-certificates >\/dev\/null\n\nmkdir -p \/mnt\/server\ncd \/mnt\/server\n\nif [ -z \"${AP_VERSION}\" ] || [ \"${AP_VERSION}\" == \"latest\" ]; then\n    AP_VERSION=$(curl -fsSL https:\/\/api.github.com\/repos\/ArchipelagoMW\/Archipelago\/releases\/latest | jq -r '.tag_name')\nfi\necho \"Installing Archipelago ${AP_VERSION}\"\n\nURL=\"https:\/\/github.com\/ArchipelagoMW\/Archipelago\/releases\/download\/${AP_VERSION}\/Archipelago_${AP_VERSION}_linux-x86_64.tar.gz\"\ncurl -fL -o archipelago.tar.gz \"${URL}\" || { echo \"Download failed: ${URL}\"; exit 1; }\n\n# Keep the user's host.yaml across reinstalls\/updates\n[ -f Archipelago\/host.yaml ] && cp Archipelago\/host.yaml \/tmp\/host.yaml.bak\ntar -xzf archipelago.tar.gz\nrm -f archipelago.tar.gz\n[ -f \/tmp\/host.yaml.bak ] && cp \/tmp\/host.yaml.bak Archipelago\/host.yaml\nchmod +x Archipelago\/ArchipelagoServer || true\n\nmkdir -p seeds Archipelago\/custom_worlds\n\ncat > start.sh <<'EOF'\n#!\/bin\/bash\ncd \/home\/container\nSEED_DIR=\/home\/container\/seeds\n\nif [ -n \"${SEED_FILE}\" ]; then\n    SEED=\"${SEED_DIR}\/${SEED_FILE}\"\nelse\n    SEED=$(ls -t \"${SEED_DIR}\"\/*.zip \"${SEED_DIR}\"\/*.archipelago 2>\/dev\/null | head -n1)\nfi\n\nif [ -z \"${SEED}\" ] || [ ! -f \"${SEED}\" ]; then\n    echo \"No seed found. Upload your generated AP_*.zip (or .archipelago file) into the 'seeds' folder, then start the server again.\"\n    exit 1\nfi\necho \"Using seed: ${SEED}\"\n\nARGS=(--host 0.0.0.0 --port \"${SERVER_PORT}\")\n[ -n \"${SERVER_PASSWORD}\" ] && ARGS+=(--password \"${SERVER_PASSWORD}\")\n[ -n \"${ADMIN_PASSWORD}\" ]  && ARGS+=(--server_password \"${ADMIN_PASSWORD}\")\nARGS+=(--hint_cost \"${HINT_COST:-10}\")\nARGS+=(--location_check_points \"${LOCATION_CHECK_POINTS:-1}\")\nARGS+=(--release_mode \"${RELEASE_MODE:-auto}\")\nARGS+=(--collect_mode \"${COLLECT_MODE:-auto}\")\nARGS+=(--remaining_mode \"${REMAINING_MODE:-goal}\")\nARGS+=(--auto_shutdown \"${AUTO_SHUTDOWN:-0}\")\n\nexec .\/Archipelago\/ArchipelagoServer \"${ARGS[@]}\" \"${SEED}\"\nEOF\nchmod +x start.sh\n\necho \"Install complete. Upload your seed to the seeds\/ folder.\"\n",
+            "container": "ghcr.io\/parkervcp\/installers:debian",
+            "entrypoint": "bash"
+        }
+    },
+    "variables": [
+        {
+            "name": "Archipelago Version",
+            "description": "Release tag to install (e.g. 0.6.2) or 'latest'. Must match (or be newer than) the version used to generate the seed. Reinstall the server after changing.",
+            "env_variable": "AP_VERSION",
+            "default_value": "latest",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string|max:20",
+            "field_type": "text"
+        },
+        {
+            "name": "Seed File",
+            "description": "File name inside seeds\/ to host. Leave empty to use the most recently uploaded seed.",
+            "env_variable": "SEED_FILE",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string|max:200",
+            "field_type": "text"
+        },
+        {
+            "name": "Server Password",
+            "description": "Password players need to join. Leave empty for none.",
+            "env_variable": "SERVER_PASSWORD",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string|max:64",
+            "field_type": "text"
+        },
+        {
+            "name": "Admin Password",
+            "description": "Password for \/admin commands from clients. Leave empty to disable remote admin.",
+            "env_variable": "ADMIN_PASSWORD",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string|max:64",
+            "field_type": "text"
+        },
+        {
+            "name": "Hint Cost",
+            "description": "Percent of total location checks one hint costs (0-100).",
+            "env_variable": "HINT_COST",
+            "default_value": "10",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|integer|between:0,100",
+            "field_type": "text"
+        },
+        {
+            "name": "Location Check Points",
+            "description": "Hint points earned per location checked.",
+            "env_variable": "LOCATION_CHECK_POINTS",
+            "default_value": "1",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|integer|min:0",
+            "field_type": "text"
+        },
+        {
+            "name": "Release Mode",
+            "description": "When players may !release their remaining items.",
+            "env_variable": "RELEASE_MODE",
+            "default_value": "auto",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string|in:disabled,enabled,auto,auto-enabled,goal",
+            "field_type": "text"
+        },
+        {
+            "name": "Collect Mode",
+            "description": "When players may !collect their items from other worlds.",
+            "env_variable": "COLLECT_MODE",
+            "default_value": "auto",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string|in:disabled,enabled,auto,auto-enabled,goal",
+            "field_type": "text"
+        },
+        {
+            "name": "Remaining Mode",
+            "description": "When players may use !remaining.",
+            "env_variable": "REMAINING_MODE",
+            "default_value": "goal",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string|in:disabled,enabled,goal",
+            "field_type": "text"
+        },
+        {
+            "name": "Auto Shutdown",
+            "description": "Minutes of inactivity before the server shuts down. 0 = never.",
+            "env_variable": "AUTO_SHUTDOWN",
+            "default_value": "0",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|integer|min:0",
+            "field_type": "text"
+        }
+    ]
+}

@@ -1,0 +1,2 @@
+img/map.jpg and img/inset-*.jpg are crops of the Old School RuneScape world map supplied by the server owner.
+The map artwork belongs to Jagex Ltd. Keep it on your own server; do not redistribute it.

@@ -1,0 +1,6 @@
+/* The bar at the top of the demo board. */
+.demo-bar{display:flex;align-items:center;flex-wrap:wrap;gap:8px 14px;padding:10px 14px;border:1px dashed var(--gold);border-radius:10px;background:var(--gold-soft);color:var(--fg)}
+.demo-tag{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;padding:2px 8px;border-radius:999px;background:var(--gold);color:var(--surface)}
+.demo-txt{flex:1 1 320px;min-width:0;font-size:14px}
+.demo-btns{display:flex;gap:6px}
+.demo-bar button.ghost{border-color:var(--gold);color:var(--fg)}

@@ -1,0 +1,78 @@
+/* Old School RuneScape: always the game's brown stone interface, in both page themes. Scoped to .os */
+@import url("https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600&display=swap");
+.os{--bg:#3e3529;--panel:#494034;--dark:#2b2620;--edge:#5c5146;--hi:#6b5f50;--yellow:#ffff00;--orange:#ff981f;--green:#0dc10d;--red:#ff3a2a;--tx:#ffff00;--dim:#c8b98f;
+  --face:"Pixelify Sans","Courier New",monospace;
+  background:var(--bg);color:var(--dim);font-family:var(--face);font-size:15px;text-shadow:1px 1px 0 #000;
+  border:3px solid var(--dark);box-shadow:inset 0 0 0 2px var(--edge),inset 0 0 0 4px var(--dark);padding:18px;display:flex;flex-direction:column;gap:20px;border-radius:2px}
+.os h3{font-family:var(--face);font-weight:600;font-size:19px;color:var(--orange);margin:0}
+.os h4{font-family:var(--face);font-weight:600;font-size:15px;color:var(--sc,var(--orange));margin:0 0 4px}
+.os .os-k{color:var(--orange);font-size:13px}
+.os .os-dim{color:var(--dim);font-size:13px}
+.os .os-g{color:var(--green)}.os .os-y{color:var(--yellow)}.os .os-r{color:var(--red)}
+.os-sec{display:flex;flex-direction:column;gap:10px}
+.os-shead{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;border-bottom:2px solid var(--dark);padding-bottom:5px;box-shadow:0 1px 0 var(--edge)}
+
+/* top stats */
+.os-top{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}
+.os-stat{background:var(--dark);border:2px solid var(--edge);padding:10px 12px;display:flex;flex-direction:column;gap:2px}
+.os-stat b{font-size:28px;color:var(--yellow);line-height:1.1;font-weight:600}
+.os-stat small{font-size:12.5px}
+
+/* quest list */
+.os-list,.os-tasks ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:2px 16px}
+.os-list li,.os-tasks li{display:flex;flex-direction:column;padding:3px 6px;min-width:0}
+.os-list li span,.os-tasks li span{overflow-wrap:anywhere}
+.os-list li small,.os-tasks li small{font-size:12px;color:var(--dim);overflow-wrap:anywhere}
+.os-done{color:var(--green)}
+.os-avail{color:var(--yellow)}
+.os-locked{color:var(--red)}
+li.os-locked[data-hint]:hover{background:rgba(0,0,0,.25)}
+.os-qp{font-weight:400;color:var(--dim);font-size:12px}
+
+/* map */
+.os-map{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));grid-auto-rows:44px;gap:3px;padding:8px;border:2px solid var(--dark);
+  /* wilderness at the top, grassland, sea along the south coast */
+  background:linear-gradient(180deg,#5b3b33 0,#5b3b33 13%,#5d6b3c 13%,#5d6b3c 84%,#2f5a7a 84%,#2f5a7a 100%)}
+.os-area{display:flex;align-items:center;justify-content:center;text-align:center;padding:2px 4px;font-size:12.5px;line-height:1.1;border:2px solid rgba(0,0,0,.6);background:rgba(20,16,12,.72);color:#8f8570;min-width:0;overflow:hidden}
+.os-area span{overflow-wrap:anywhere}
+.os-area.on{background:rgba(255,236,170,.88);color:#2b2016;text-shadow:none;border-color:#2b2016;font-weight:600}
+.os-area.start{outline:2px solid var(--yellow);outline-offset:-4px}
+.os-area[data-hint]:hover{border-color:var(--yellow);color:var(--yellow)}
+
+/* real map (img/map.jpg + outlines from data/map.json) */
+.os-mapscroll{overflow:auto;border:2px solid var(--dark);background:#1b2a3a}
+.os-mapwrap{position:relative;line-height:0}
+.os-mapwrap img{display:block;width:100%;height:auto}
+.os-mapwrap svg{position:absolute;inset:0;width:100%;height:100%}
+.os-reg polygon{stroke-linejoin:round;vector-effect:non-scaling-stroke}
+.os-reg.locked polygon{fill:rgba(12,9,6,.66);stroke:#000;stroke-width:1.5}
+.os-reg.on polygon{fill:rgba(255,236,170,.06);stroke:#ffe27a;stroke-width:2}
+.os-reg.start polygon{stroke:#ffff00;stroke-width:3}
+.os-reg text{font-family:var(--face);text-anchor:middle;dominant-baseline:middle;paint-order:stroke;stroke:#000;stroke-width:3px;stroke-linejoin:round;pointer-events:none}
+.os-reg.on text{fill:#ffff00}
+.os-reg.locked text{fill:#b3a78a}
+.os-reg.locked{cursor:pointer}
+.os-reg.locked:hover polygon,.os-reg.locked:focus polygon{fill:rgba(12,9,6,.42);stroke:#ff981f;stroke-width:2}
+.os-insets{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start;margin-top:8px}
+.os-insets>.os-dim{width:100%}
+.os-inset{margin:0;width:170px;border:2px solid var(--dark);background:#1b2a3a}
+.os-inset figcaption{font-size:12.5px;padding:4px 6px;background:var(--dark);color:var(--orange)}
+@media (max-width:700px){.os-mapscroll .os-mapwrap{width:640px}}
+
+/* equipment */
+.os-gears{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:8px}
+.os-gear{background:var(--dark);border:2px solid var(--edge);padding:8px 10px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.os-tiers{display:flex;gap:3px;flex-wrap:wrap}
+.os-tiers span{font-size:12px;padding:2px 6px;border:1px solid #000;background:#1e1a15;color:#6e6352}
+.os-tiers span.on{background:var(--mc);color:#fff}
+.os-tiers span.cur{outline:2px solid var(--yellow);outline-offset:1px}
+
+/* skills */
+.os-skills{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:4px}
+.os-skill{display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--dark);border:2px solid var(--edge)}
+.os-skill i{width:14px;height:14px;background:var(--sc);border:1px solid #000;flex:none}
+.os-skill span{flex:1;color:var(--orange)}
+.os-skill b{color:var(--yellow);font-weight:600}
+.os-skill em{font-style:normal;color:var(--dim);font-weight:400}
+.os-tasks{display:flex;flex-direction:column}
+@media (max-width:560px){.os{padding:12px}.os-map{grid-auto-rows:38px;gap:2px;padding:4px}.os-area{font-size:9.5px;padding:1px}.os-gears{grid-template-columns:1fr}}

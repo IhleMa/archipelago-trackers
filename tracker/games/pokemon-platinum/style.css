@@ -1,0 +1,99 @@
+/* Pokemon Platinum: a DS-era trainer card in Platinum's gold and black, with a green Pokétch screen.
+   Same look in both page themes. Scoped to .pp */
+@import url("https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600&family=Nunito:wght@600;800&display=swap");
+.pp{--ink:#16171c;--panel:#22242c;--edge:#3a3d48;--gold:#d6b35a;--gold-hi:#f3dd96;--plat:#c9ced8;--tx:#eceef3;--dim:#9096a3;--ok:#7fd98a;--half:#e9b949;
+  --lcd:#a6c98a;--lcd-dk:#2f4a26;--lcd-off:#8aa877;
+  --face:"Nunito",system-ui,sans-serif;--px:"Pixelify Sans","Courier New",monospace;
+  background:linear-gradient(160deg,#2a2c34,#16171c 55%);color:var(--tx);font-family:var(--face);font-weight:600;font-size:15px;
+  border:1px solid var(--edge);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:22px}
+.pp h3{font-family:var(--face);font-weight:800;font-size:19px;margin:0;color:var(--gold-hi);letter-spacing:.02em}
+.pp h4{font-family:var(--face);font-weight:800;font-size:13px;margin:0 0 6px;color:var(--plat);text-transform:uppercase;letter-spacing:.12em}
+.pp .pp-k{font-size:11.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.1em;font-weight:800}
+.pp .pp-dim{color:var(--dim);font-size:13.5px}
+.pp-sec{display:flex;flex-direction:column;gap:10px}
+.pp-shead{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;border-bottom:2px solid var(--edge);padding-bottom:6px}
+.pp [data-hint]{cursor:pointer}
+.pp [data-hint]:focus-visible{outline:2px solid var(--gold-hi);outline-offset:2px}
+
+/* trainer card */
+.pp-card{border-radius:14px;overflow:hidden;border:3px solid #8f7531;background:linear-gradient(135deg,#f7eccb,#e6cf8c 60%,#cfae5b);color:#3a2e10;box-shadow:0 6px 18px rgba(0,0,0,.35)}
+.pp-cardtop{display:flex;justify-content:space-between;padding:6px 14px;background:#3a2e10;color:var(--gold-hi);font-weight:800;font-size:12.5px;letter-spacing:.18em}
+.pp-cardbody{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;padding:14px 16px;align-items:center}
+.pp-card .pp-k{color:#7a6324}
+.pp-info{display:flex;flex-direction:column;gap:4px;min-width:0}
+.pp-name{font-size:30px;font-weight:800;line-height:1.05;overflow-wrap:anywhere}
+.pp-stats{display:flex;gap:6px 18px;flex-wrap:wrap;margin-top:4px}
+.pp-stats>div{display:flex;flex-direction:column;padding:4px 10px;border-radius:8px;background:rgba(255,255,255,.45);border:1px solid rgba(58,46,16,.25)}
+.pp-stats b{font-size:18px;font-weight:800}
+.pp-stats>div[data-hint]:hover{background:rgba(255,255,255,.75)}
+.pp-goal{margin-top:6px;font-size:13.5px;color:#5b4818}
+.pp-case{display:grid;grid-template-columns:repeat(4,62px);gap:6px;padding:10px;border-radius:10px;background:#3a2e10;box-shadow:inset 0 2px 6px rgba(0,0,0,.5)}
+.pp-badge{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 2px 4px;border-radius:8px;background:#2a210b;color:#8b8170;font-size:11px;font-weight:800}
+.pp-badge svg{width:30px;height:30px}
+.pp-badge.on{background:radial-gradient(circle at 50% 35%,#5a4818,#2a210b 75%);color:var(--gold-hi)}
+.pp-badge.on svg{filter:drop-shadow(0 0 5px rgba(255,230,140,.55))}
+.pp-badge[data-hint]:not(.on):hover{color:var(--gold-hi);background:#45370f}
+
+/* HMs */
+.pp-hms{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}
+.pp-hm{display:flex;gap:10px;align-items:center;padding:8px 10px;border-radius:10px;background:var(--panel);border:1px solid var(--edge);color:var(--dim);min-width:0}
+.pp-hm>div{display:flex;flex-direction:column;min-width:0}
+.pp-hm b{color:var(--tx);font-weight:800}
+.pp-hm small{font-size:12.5px;overflow-wrap:anywhere}
+.pp-disc{flex:none;width:38px;height:38px;border-radius:50%;background:radial-gradient(circle,#22242c 0 16%,#555a66 17% 100%);box-shadow:inset 0 0 0 2px #2f323b}
+.pp-hm b em{font-style:normal;font-family:var(--px);font-weight:400;font-size:12px;color:var(--dim);margin-left:6px}
+.pp-hm.on{border-color:#3f7a49;background:linear-gradient(90deg,rgba(127,217,138,.12),var(--panel));color:var(--ok)}
+.pp-hm.on .pp-disc{background:radial-gradient(circle,#22242c 0 18%,#c7cdd8 19% 60%,#8f97a6 100%)}
+.pp-hm.half{border-color:#7a6224;color:var(--half)}
+.pp-hm.half .pp-disc{background:radial-gradient(circle,#22242c 0 18%,#a8adb8 19% 100%)}
+.pp-hm[data-hint]:hover{border-color:var(--gold)}
+
+/* Pokétch */
+.pp-poketch{display:flex;flex-direction:column;gap:10px;align-items:flex-start}
+.pp-watch{display:flex;align-items:stretch;gap:0;padding:10px;border-radius:22px;background:linear-gradient(180deg,#e2484f,#a8242c);box-shadow:inset 0 -3px 0 rgba(0,0,0,.25),0 4px 12px rgba(0,0,0,.35);max-width:100%}
+.pp-btn{width:10px;border-radius:4px;background:#7a1a20;margin:20px 6px;flex:none}
+.pp-lcd{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:4px;padding:10px;border-radius:10px;background:var(--lcd);
+  box-shadow:inset 0 0 0 3px #6f8f5c,inset 0 3px 10px rgba(0,0,0,.25);width:min(760px,calc(100vw - 120px));min-width:0}
+.pp-app{font-family:var(--px);font-size:13px;color:var(--lcd-off);padding:4px 6px;border:1px dashed var(--lcd-off);border-radius:4px;text-align:center;line-height:1.15;overflow-wrap:anywhere}
+.pp-app.on{color:var(--lcd);background:var(--lcd-dk);border:1px solid var(--lcd-dk)}
+.pp-app[data-hint]:not(.on):hover{color:var(--lcd-dk);border-color:var(--lcd-dk)}
+.pp-poketch.off .pp-watch{filter:grayscale(.85) brightness(.8)}
+.pp-poketch.off .pp-lcd{background:#7d8a72}
+.pp-poketch.off .pp-watch:hover{filter:grayscale(.4)}
+.pp-lcdnote{font-size:13.5px;color:var(--half)}
+.pp-coupons{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.pp-chip{padding:3px 10px;border-radius:999px;border:1px solid var(--edge);color:var(--dim);font-size:13px}
+.pp-chip.on{border-color:var(--gold);color:var(--gold-hi);background:rgba(214,179,90,.12)}
+
+/* key items, fly, cartridges */
+.pp-keys{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:6px}
+.pp-key{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:8px;background:var(--panel);border:1px solid var(--edge);color:var(--dim);font-size:14px;min-width:0}
+.pp-key::before{content:"";flex:none;width:9px;height:9px;border-radius:50%;border:2px solid #5d6270}
+.pp-key span{overflow-wrap:anywhere;min-width:0}
+.pp-key.on{color:var(--tx);border-color:#6a5a2c}
+.pp-key.on::before{background:var(--gold);border-color:var(--gold-hi)}
+.pp-key[data-hint]:not(.on):hover{border-color:var(--gold);color:var(--tx)}
+
+/* Sinnoh */
+.pp-area{display:flex;flex-direction:column}
+.pp-places{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:6px}
+.pp-place{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 8px;align-items:center;padding:7px 10px;border-radius:8px;background:var(--panel);border:1px solid var(--edge);font-size:14px}
+.pp-place span{overflow-wrap:anywhere;color:var(--dim)}
+.pp-place.town span{color:var(--tx);font-weight:800}
+.pp-place small{color:var(--dim);font-size:12.5px;grid-row:1;grid-column:2}
+.pp-bar{grid-column:1 / -1;height:4px;border-radius:2px;background:#101116;overflow:hidden}
+.pp-bar i{display:block;height:100%;background:var(--gold)}
+.pp-place.done{border-color:#3f7a49}
+.pp-place.done .pp-bar i{background:var(--ok)}
+.pp-place.done small{color:var(--ok)}
+
+@media (max-width:620px){
+  .pp{padding:12px;gap:18px}
+  .pp-cardbody{grid-template-columns:1fr}
+  .pp-case{grid-template-columns:repeat(4,minmax(0,1fr));justify-self:stretch}
+  .pp-name{font-size:24px}
+  .pp-lcd{width:calc(100vw - 104px);grid-template-columns:repeat(2,minmax(0,1fr))}
+  .pp-btn{margin:20px 4px;width:7px}
+  .pp-places{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .pp-keys{grid-template-columns:repeat(2,minmax(0,1fr))}
+}

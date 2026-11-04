@@ -1,0 +1,5 @@
+/* Scope every rule under your own class so it can't change other games or the core page. */
+.mygame{display:flex;flex-direction:column;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px}
+.mygame-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
+.mygame-tile{padding:10px;border-radius:8px;border:1px dashed var(--line);color:var(--muted);text-align:center}
+.mygame-tile.on{border-style:solid;border-color:var(--accent);color:var(--fg);background:var(--accent-soft)}

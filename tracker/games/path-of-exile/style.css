@@ -1,0 +1,59 @@
+/* Path of Exile: always the game's dark stash look, in both page themes. Scoped to .poe */
+@import url("https://fonts.googleapis.com/css2?family=Alegreya+SC:wght@500;700&display=swap");
+.poe{--bg:#0d0b09;--panel:#1a1612;--edge:#4a3d2c;--tx:#c8c0b2;--dim:#6f665a;--gold:#e2c89a;
+  --normal:#c8c8c8;--magic:#8888ff;--rare:#ffff77;--unique:#af6025;--gem:#1ba29b;
+  --cell:min(54px,calc((100vw - 110px)/8.4));--face:"Alegreya SC",Georgia,"Times New Roman",serif;
+  background:var(--bg);color:var(--tx);border:1px solid var(--edge);border-radius:6px;padding:16px;display:flex;flex-direction:column;gap:18px}
+.poe h3{font-family:var(--face);font-weight:700;font-size:17px;color:var(--gold);letter-spacing:.02em;margin:0}
+.poe .dim{font-size:12px;color:var(--dim)}
+.poe .gold{color:var(--gold);font-family:var(--face)}
+.poe .big{font-family:var(--face);font-size:30px;color:var(--gold);line-height:1}
+.poe .row{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:13px}
+.poe-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.poe-equip{display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start}
+.poe-side{display:flex;flex-direction:column;gap:12px;flex:1 1 200px;max-width:300px}
+.poe .r-normal{--c:var(--normal)}.poe .r-magic{--c:var(--magic)}.poe .r-rare{--c:var(--rare)}.poe .r-unique{--c:var(--unique)}.poe .locked{--c:#3a332b}
+
+/* the inventory grid follows the in-game equipment layout (8 × 6 cells) */
+.poe-inv{display:grid;grid-template-columns:repeat(8,var(--cell));grid-template-rows:repeat(6,var(--cell));gap:5px;padding:14px;border:1px solid var(--edge);background:radial-gradient(ellipse at 50% 40%,#1f1a14,var(--bg) 75%)}
+.poe-flasks{display:grid;grid-template-columns:repeat(5,var(--cell));grid-auto-rows:calc(var(--cell)*1.6);gap:5px;padding:10px 14px;border:1px solid var(--edge);border-top:0;background:var(--bg)}
+.poe-slot{position:relative;border:2px solid var(--c);background:linear-gradient(180deg,color-mix(in srgb,var(--c) 14%,#0a0907),#0a0907 70%);box-shadow:inset 0 0 14px color-mix(in srgb,var(--c) 30%,transparent),0 0 0 1px #000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:3px;text-align:center;min-width:0;overflow:hidden}
+.poe-slot.locked{border-style:dashed;box-shadow:inset 0 0 0 1px #000;background:#0a0907}
+.poe-slot .sn{font-family:var(--face);font-weight:700;font-size:12px;line-height:1.05;color:var(--tx)}
+.poe-slot .sr{font-family:var(--face);font-size:11px;color:var(--c)}
+.poe-slot.locked .sn,.poe-slot.locked .sr{color:var(--dim)}
+.poe-slot .lk{position:absolute;top:3px;right:4px;font-family:var(--face);font-size:11px;color:var(--rare)}
+.poe-slot .types{display:flex;flex-direction:column;width:100%;font-size:11px;line-height:1.25;margin-top:2px}
+.poe-slot .types span{color:var(--c);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.poe-slot .types span.locked{color:var(--dim)}
+.poe-slot .types span:hover{text-decoration:underline}
+.poe-flasks .poe-slot{border-radius:0 0 40% 40%/0 0 22% 22%}
+.s-weapon{grid-area:1/1/5/3}.s-offhand{grid-area:1/7/5/9}.s-helmet{grid-area:1/4/3/6}.s-body{grid-area:3/4/6/6}.s-amulet{grid-area:2/6/3/7}
+.s-ringl{grid-area:4/3/5/4}.s-ringr{grid-area:4/6/5/7}.s-gloves{grid-area:5/2/7/4}.s-belt{grid-area:6/4/7/6}.s-boots{grid-area:5/6/7/8}
+.s-amulet .sn,.s-ringl .sn,.s-ringr .sn{font-size:11px}
+
+.poe .legend{display:flex;flex-wrap:wrap;gap:8px 14px;font-size:13px}
+.poe .lg{display:flex;align-items:center;gap:6px}
+.poe .lg i{width:14px;height:14px;border:2px solid var(--c);background:color-mix(in srgb,var(--c) 18%,#0a0907)}
+.poe .lg.locked i{border-style:dashed;border-color:var(--dim)}
+.poe-box{border:1px solid var(--edge);background:var(--panel);padding:12px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.poe-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.poe-cols.three{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.poe .pips{display:flex;gap:4px}
+.poe .pips i{width:13px;height:13px;border-radius:50%;border:1.5px solid var(--dim)}
+.poe .pips i.on{background:var(--rare);border-color:var(--rare)}
+.poe .classes{display:flex;flex-direction:column;gap:6px;font-size:13px}
+.poe .cl{display:flex;gap:6px;flex-wrap:wrap;align-items:baseline}
+.poe .cl b{font-family:var(--face);min-width:84px;color:var(--dim)}
+.poe .cl b.on{color:var(--gold)}
+.poe .asc{font-size:12px;padding:1px 7px;border:1px solid var(--edge);color:var(--dim)}
+.poe .asc.on{border-color:var(--gold);color:var(--gold)}
+.poe .gems{display:flex;flex-wrap:wrap;gap:4px}
+.poe .gem{font-size:12px;padding:2px 8px;border:1px solid color-mix(in srgb,var(--gem) 60%,transparent);color:var(--gem);background:color-mix(in srgb,var(--gem) 10%,var(--panel))}
+.poe .gem.sup{--gem:#6fa0c8}.poe .gem.util{--gem:#9cbb5a}
+@media (max-width:560px){
+  .poe{padding:12px}
+  .poe-inv,.poe-flasks{--cell:calc((100vw - 124px)/8);gap:4px;padding:8px}
+  .poe-slot .sn{font-size:10.5px}.poe-slot .sr{font-size:9.5px}.poe-slot .types{font-size:10px}
+  .s-amulet .sn,.s-ringl .sn,.s-ringr .sn{font-size:8.5px}.s-amulet,.s-ringl,.s-ringr{padding:1px}
+}
