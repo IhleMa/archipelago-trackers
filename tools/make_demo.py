@@ -33,6 +33,7 @@ def load(path):
 
 
 def plain(o):
+    if hasattr(o, "__dataclass_fields__"): return {k: plain(getattr(o, k)) for k in o.__dataclass_fields__}
     if isinstance(o, dict): return {str(k): plain(v) for k, v in o.items()}
     if isinstance(o, (list, tuple, set, frozenset)): return [plain(x) for x in o]
     if isinstance(o, (str, int, float, bool)) or o is None: return o

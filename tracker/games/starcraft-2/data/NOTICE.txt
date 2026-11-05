@@ -1,0 +1,8 @@
+data/sc2.json is generated from Archipelago's StarCraft II world (worlds/sc2 in Archipelago 0.6.8, MIT licence):
+missions with their campaign and race, items with their race, type and the unit they upgrade, and the item groups
+used to sort units by production building. Mission availability follows the SC2 client's own rules
+(worlds/sc2/client.py, calc_available_nodes) using the mission order the world puts in slot data.
+
+data/icons.json holds glyphs drawn for this tracker. No StarCraft artwork, logos or characters are used.
+
+StarCraft is a trademark of Blizzard Entertainment. This tracker isn't affiliated with or endorsed by Blizzard.

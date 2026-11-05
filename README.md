@@ -11,6 +11,7 @@ Games with their own tracker get a custom view. Every other game gets the generi
 | Minecraft | `tracker/games/minecraft` |
 | Baldur's Gate 3 | `tracker/games/baldurs-gate-3` |
 | Satisfactory | `tracker/games/satisfactory` |
+| StarCraft II | `tracker/games/starcraft-2` |
 | Elden Ring | `tracker/games/elden-ring` |
 | Old School RuneScape | `tracker/games/old-school-runescape` |
 | Pokémon Platinum | `tracker/games/pokemon-platinum` |
