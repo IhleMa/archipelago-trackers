@@ -1,0 +1,12 @@
+data/wynncraft.json is generated from two sources:
+
+1. The Wynncraft Archipelago world by EpicPuppy613 (https://github.com/EpicPuppy613/Wynncraft-APWorld,
+   world version 0.5.0): territory levels and connections, zones and areas, every check with its level,
+   territories, prerequisites and gear requirements, and the level and access rules. That repository has no
+   licence file; only these facts are used, so the tracker can show the same rules the world uses.
+   If the author asks, it will be removed.
+
+2. Territory outlines (map coordinates) from Wynncraft's public territory list, as collected in
+   https://github.com/jakematt123/Wynncraft-Territory-Info (territories.json). Only the coordinates are used.
+
+Wynncraft is a trademark of Wynncraft. This tracker isn't affiliated with Wynncraft or the Wynnpelago author.

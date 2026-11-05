@@ -14,6 +14,7 @@ Games with their own tracker get a custom view. Every other game gets the generi
 | Old School RuneScape | `tracker/games/old-school-runescape` |
 | Pokémon Platinum | `tracker/games/pokemon-platinum` |
 | Resident Evil 4 Remake | `tracker/games/resident-evil-4-remake` |
+| Wynncraft | `tracker/games/wynncraft` |
 
 ## Setting up the server
 
