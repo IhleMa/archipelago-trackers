@@ -5,7 +5,7 @@
    games/<folder>/ (see games/README.md). */
 "use strict";
 (() => {
-const VERSION = "1.4.0";
+const VERSION = "1.4.1";
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const store = {

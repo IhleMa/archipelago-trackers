@@ -45,9 +45,9 @@ The server runs a small relay (`relay/relay.py`, standard-library Python; the in
 
 ## Demo mode
 
-Add `?demo` to the tracker address (`http://<server address>:<tracker port>/?demo`) to see every game tracker without an Archipelago server. It plays a generated seed with one made-up player per game: everyone starts part way through, new checks and items keep arriving every few seconds, and hints are answered the way the server would. Nothing is sent to the server, and other people's view of the real tracker isn't affected.
+Add `?demo` to the tracker address (`http://<server address>:<tracker port>/?demo`) to see every game tracker without an Archipelago server or a seed. Every installed game tracker that has a `demo.json` in its folder adds one made-up player, and their items are shuffled across everyone's checks, so it plays like a real multiworld: everyone starts part way through, new checks and items keep arriving every few seconds, and hints are answered the way the server would. Nothing is sent to the server, and other people's view of the real tracker isn't affected.
 
-The demo lives in `tracker/demo/`. To put different players or a new game in it, generate a seed with them and run `tools/make_demo.py` on it from an Archipelago source checkout (the instructions are at the top of the script).
+A game tracker without a `demo.json` is simply left out (the demo says so). To make one, run `tools/make_demo.py --game "Exact Game Name"` from an Archipelago source checkout with that world installed. It generates a one-player seed with default options by itself and writes the file into the tracker's folder. `--yaml` uses your own options instead, and passing an existing seed file writes demo files for every game in it.
 
 ## Adding a game tracker
 

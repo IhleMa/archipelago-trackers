@@ -1,22 +1,27 @@
-"""Turn a generated Archipelago seed into the tracker demo (tracker/demo/demo.json).
+"""Make the demo data for game trackers: tracker/games/<folder>/demo.json.
 
-Generate a multiworld with the players you want in the demo (one per game tracker you want to see),
-then run this from an Archipelago source checkout that has the same worlds installed:
+The demo (open the tracker with ?demo) adds one made-up player for every installed game tracker that has a
+demo.json, and shuffles all their items across everyone's checks. So a game only needs its own file, and
+no shared seed is needed.
+
+Run this from an Archipelago source checkout that has the game's world installed (custom_worlds/ or worlds/):
 
     cd path/to/Archipelago
-    python /path/to/this/repo/tools/make_demo.py output/AP_12345.zip
+    python /path/to/this/repo/tools/make_demo.py --game "Pokemon Platinum"            # generates a one-player seed with default options
+    python /path/to/this/repo/tools/make_demo.py --game "Pokemon Platinum" --yaml my.yaml   # or with your own options
+    python /path/to/this/repo/tools/make_demo.py output/AP_12345.zip                  # every game in an existing seed
 
-It writes tracker/demo/demo.json in this repo. Open the tracker with ?demo to see it.
-To keep the file small, only the locations that are in the seed are kept, and large slot_data
-entries are dropped unless a game tracker's tracker.js mentions them by name.
+Each file holds the game's data package (only the checks in the seed), its slot data (large entries are
+dropped unless a tracker.js mentions them), its checks in the order a playthrough reaches them, and the
+items that belong to it. The file goes into the game tracker folder whose game.json names that game.
 """
-import glob, gzip, json, os, sys, zipfile
+import argparse, glob, json, os, subprocess, sys, tempfile, zipfile
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.getcwd())
 os.environ.setdefault("SKIP_REQUIREMENTS_UPDATE", "1")
-import MultiServer                          # noqa: E402  (needs the Archipelago checkout on the path)
-from worlds.AutoWorld import AutoWorldRegister  # noqa: E402
+import MultiServer                               # noqa: E402  (needs the Archipelago checkout as the working directory)
+from worlds.AutoWorld import AutoWorldRegister   # noqa: E402
 
 
 def load(path):
@@ -34,33 +39,81 @@ def plain(o):
     return str(o)
 
 
-def main():
-    if len(sys.argv) < 2: sys.exit(__doc__)
-    d = load(sys.argv[1])
-    used_names = "".join(open(f, encoding="utf-8").read() for f in glob.glob(os.path.join(REPO, "tracker/games/*/tracker.js")))
-    slots, used_locs = {}, {}
+def folders():
+    out = {}
+    for f in glob.glob(os.path.join(REPO, "tracker/games/*/game.json")):
+        meta = json.load(open(f, encoding="utf-8"))
+        for g in [meta.get("game")] + list(meta.get("games") or []):
+            if g: out[g] = os.path.basename(os.path.dirname(f))
+    return out
+
+
+def write_demos(d, only=None):
+    where, tracker_js = folders(), "".join(open(f, encoding="utf-8").read() for f in glob.glob(os.path.join(REPO, "tracker/games/*/tracker.js")))
+    order = {}
+    for sp in d.get("spheres") or []:
+        for s, locs in sp.items():
+            order.setdefault(s, []).extend(sorted(locs))
+    pool = {}
+    for s, locs in d["locations"].items():
+        for l, (item, recv, flags) in locs.items():
+            pool.setdefault(recv, []).append([item, flags])
+    wrote = 0
     for s, info in d["slot_info"].items():
-        if info.type != 1: continue          # skip item link groups and spectators
-        sd = plain(d["slot_data"].get(s, {}))
-        sd = {k: v for k, v in sd.items() if len(json.dumps(v)) <= 20000 or k in used_names}
-        locs = [[l, v[0], v[1], v[2]] for l, v in sorted(d["locations"][s].items())]
-        used_locs.setdefault(info.game, set()).update(l[0] for l in locs)
-        slots[str(s)] = {"name": info.name, "game": info.game, "slot_data": sd, "locs": locs,
-                         "pre": list(d["precollected_items"].get(s, []))}
-    dp = {}
-    for g in sorted(set(used_locs) | {"Archipelago"}):
-        p = AutoWorldRegister.world_types[g].get_data_package_data()
-        keep = used_locs.get(g)
-        dp[g] = {"item_name_to_id": p["item_name_to_id"],
-                 "location_name_to_id": {n: i for n, i in p["location_name_to_id"].items() if keep is None or i in keep}}
-    spheres = [{str(s): sorted(l) for s, l in sp.items() if l and str(s) in slots} for sp in d.get("spheres") or []]
-    out = {"seed": d["seed_name"], "hint_cost": d["server_options"].get("hint_cost", 10),
-           "datapackage": dp, "slots": slots, "spheres": spheres}
-    txt = json.dumps(out, separators=(",", ":"))
-    dest = os.path.join(REPO, "tracker/demo/demo.json")
-    with open(dest, "w", encoding="utf-8") as f: f.write(txt)
-    print(f"wrote {dest}: {len(slots)} players, {len(txt) // 1024} KB ({len(gzip.compress(txt.encode())) // 1024} KB gzipped)")
-    for s in slots.values(): print(f"  {s['name']}: {s['game']}, {len(s['locs'])} checks")
+        if info.type != 1 or (only and info.game != only):
+            continue
+        folder = where.get(info.game)
+        if not folder:
+            print(f"  {info.game}: no game tracker folder names this game in its game.json, skipped")
+            continue
+        seen = set(order.get(s, []))
+        locs = order.get(s, []) + sorted(l for l in d["locations"][s] if l not in seen)
+        dp = AutoWorldRegister.world_types[info.game].get_data_package_data()
+        sd = {k: v for k, v in plain(d["slot_data"].get(s, {})).items() if len(json.dumps(v)) <= 20000 or k in tracker_js}
+        out = {"game": info.game, "name": info.name, "slot_data": sd, "pre": list(d["precollected_items"].get(s, [])),
+               "locations": locs, "pool": pool.get(s, []),
+               "datapackage": {"item_name_to_id": dp["item_name_to_id"],
+                               "location_name_to_id": {n: i for n, i in dp["location_name_to_id"].items() if i in d["locations"][s]}}}
+        dest = os.path.join(REPO, "tracker/games", folder, "demo.json")
+        txt = json.dumps(out, separators=(",", ":"))
+        with open(dest, "w", encoding="utf-8") as f:
+            f.write(txt)
+        print(f"  {folder}/demo.json: {info.name} playing {info.game}, {len(locs)} checks, {len(txt) // 1024} KB")
+        wrote += 1
+    return wrote
+
+
+def generate(game, yaml_path, name):
+    tmp = tempfile.mkdtemp(prefix="demo-")
+    players, out = os.path.join(tmp, "players"), os.path.join(tmp, "out")
+    os.makedirs(players)
+    if yaml_path:
+        with open(yaml_path, encoding="utf-8") as f, open(os.path.join(players, "player.yaml"), "w", encoding="utf-8") as g:
+            g.write(f.read())
+    else:
+        with open(os.path.join(players, "player.yaml"), "w", encoding="utf-8") as f:
+            f.write(f"name: {name}\ngame: {json.dumps(game)}\n{json.dumps(game)}: {{}}\n")
+    print(f"Generating a one-player {game} seed with {'your options' if yaml_path else 'default options'}…")
+    r = subprocess.run([sys.executable, "Generate.py", "--player_files_path", players, "--outputpath", out],
+                       stdin=subprocess.DEVNULL, capture_output=True, text=True)
+    zips = glob.glob(os.path.join(out, "*.zip"))
+    if r.returncode or not zips:
+        sys.exit("Generation failed:\n" + (r.stdout + r.stderr)[-3000:])
+    return zips[0]
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("seed", nargs="?", help="an existing seed (.zip or .archipelago): writes a demo file for every game in it")
+    ap.add_argument("--game", help="make the demo file for this game (exact name as Archipelago spells it)")
+    ap.add_argument("--yaml", help="with --game: use these player options instead of the defaults")
+    ap.add_argument("--name", default="Demo", help="with --game: the made-up player's name (default: Demo)")
+    a = ap.parse_args()
+    if not a.seed and not a.game:
+        ap.error("give a seed file or --game")
+    path = a.seed or generate(a.game, a.yaml, a.name)
+    if not write_demos(load(path), only=a.game if a.seed else None):
+        sys.exit("Nothing written.")
 
 
 main()

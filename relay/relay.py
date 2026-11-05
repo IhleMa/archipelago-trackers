@@ -20,7 +20,7 @@ import asyncio, base64, collections, email.utils, gzip, hashlib, hmac, json, os,
 import sys, threading, time, urllib.parse, uuid, zlib
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 
-VERSION = "1.4.0"
+VERSION = "1.4.1"
 PORT = int(os.environ.get("TRACKER_PORT") or 0)
 AP_HOST = "127.0.0.1"
 AP_PORT = int(os.environ.get("AP_PORT") or 38281)

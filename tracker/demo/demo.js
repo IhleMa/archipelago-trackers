@@ -1,13 +1,14 @@
 /* Tracker demo: plays a made-up multiworld so the trackers can be viewed without an Archipelago server.
-   Open the tracker with ?demo. demo.json holds a real generated seed (one player per game tracker):
-   the data package, slot data and where every item is placed. This script starts each player part way
-   through, then keeps finding new checks every few seconds, in the order the seed's spheres allow, and
-   answers !hint and !hint_location like the server would. Nothing here talks to a server. */
+   Open the tracker with ?demo. Every installed game tracker that has a demo.json in its folder adds one
+   made-up player: that file holds the game's names (data package), slot data, its checks in a sensible
+   order and the items that belong to it. The items of all players are shuffled across everyone's checks,
+   so it plays like a real multiworld. Each player starts part way through, new checks keep coming every
+   few seconds, and !hint / !hint_location are answered like the server would. Nothing talks to a server. */
 "use strict";
 (async () => {
 const T = window.APTracker.internal, S = T.S;
 const base = new URL(".", document.currentScript.src).href;
-const D = await fetch(base + "demo.json").then(r => r.json());
+const gamesBase = new URL("../games/", base).href;
 const link = document.createElement("link"); link.rel = "stylesheet"; link.href = base + "demo.css"; document.head.appendChild(link);
 
 /* ---------- seeded randomness, so every visit starts from the same picture ---------- */
@@ -15,29 +16,54 @@ let seed = 20261104;
 const rnd = () => { seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t ^= t + Math.imul(t ^ t >>> 7, 61 | t); return ((t ^ t >>> 14) >>> 0) / 4294967296; };
 const shuffle = a => { for(let i = a.length - 1; i > 0; i--){ const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 
-/* ---------- the world ---------- */
-T.applyDataPackage(D.datapackage);
-const slots = Object.keys(D.slots).map(Number).sort((a, b) => a - b);
-const W = {};   // slot -> {info:Map(loc -> [item, receiver, flags]), checked:Set, items:[], hints:[], points, spent, status, total}
-for(const s of slots){
-  const x = D.slots[s];
-  W[s] = { info:new Map(x.locs.map(l => [l[0], [l[1], l[2], l[3]]])), checked:new Set(), items:[], hints:[], spent:0, status:20, total:x.locs.length };
+/* ---------- one player per installed game tracker with demo data ---------- */
+let index = [];
+for(const url of [new URL("../cgi-bin/games", base).href, gamesBase + "index.json"]){
+  try { const r = await fetch(url, { cache:"no-store" }); if(r.ok){ index = await r.json(); break; } } catch(e){}
 }
-for(const s of slots){ W[s].times = []; W[s].prog = []; for(const it of D.slots[s].pre || []){ W[s].items.push({ item:it, location:-2, player:0, flags:0 }); W[s].times.push(-1); } }
+const found = (await Promise.all(index.filter(e => e && e.dir).sort((a, b) => a.dir.localeCompare(b.dir))
+  .map(e => fetch(gamesBase + encodeURIComponent(e.dir) + "/demo.json").then(r => r.ok ? r.json() : null).catch(() => null))))
+  .filter(x => x && x.game && Array.isArray(x.locations) && x.locations.length && x.datapackage);
+const without = index.filter(e => e && e.dir).length - found.length;
+if(!found.length) throw new Error("none of the installed game trackers has demo data (demo.json)");
+const D = { seed:"DEMO-" + found.map(x => x.game.slice(0, 2)).join("").toUpperCase().slice(0, 12), hint_cost:10, slots:{}, datapackage:{} };
+const used = new Set();
+found.forEach((x, i) => {
+  let name = x.name || x.game; for(let k = 2; used.has(name); k++) name = `${x.name || x.game} ${k}`; used.add(name);
+  D.slots[i + 1] = { name, game:x.game, slot_data:x.slot_data || {}, pre:x.pre || [], locations:x.locations };
+  D.datapackage[x.game] = x.datapackage;
+});
+T.applyDataPackage(D.datapackage);
+const slots = Object.keys(D.slots).map(Number);
+
+// the order things get found: each world in its own order (the file lists its checks roughly as a game reaches them),
+// interleaved across worlds in proportion to what each has left
+const queue = [], next = Object.fromEntries(slots.map(s => [s, 0]));
+for(;;){
+  let left = 0; for(const s of slots) left += D.slots[s].locations.length - next[s];
+  if(!left) break;
+  let r = rnd() * left;
+  for(const s of slots){ const k = D.slots[s].locations.length - next[s]; if(r < k){ queue.push([s, D.slots[s].locations[next[s]++]]); break; } r -= k; }
+}
+
+// everyone's items over everyone's checks. Like a real seed's logic, progression comes early: those items go into
+// checks in the first 55% of the order, the rest fill in around them. Filler pads the pool if it's short.
+const prog = [], rest = [];
+slots.forEach((s, i) => { for(const [item, flags] of found[i].pool || []) ((flags & 1) ? prog : rest).push([item, s, flags || 0]); });
+shuffle(prog); shuffle(rest);
+while(prog.length + rest.length > queue.length) (rest.length ? rest : prog).pop();
+while(prog.length + rest.length < queue.length) rest.push((rest.length ? rest : prog)[Math.floor(rnd() * (rest.length || prog.length))].slice());
+const placed = new Array(queue.length).fill(null), early = Math.max(prog.length, Math.floor(queue.length * 0.55));
+const pick = shuffle([...Array(early).keys()]).slice(0, prog.length);
+pick.forEach((q, i) => placed[q] = prog[i]);
+for(let q = 0, r = 0; q < placed.length; q++) if(!placed[q]) placed[q] = rest[r++];
+const W = {};   // slot -> {info:Map(loc -> [item, receiver, flags]), checked:Set, items:[], hints:[], points, spent, status, total}
+for(const s of slots) W[s] = { info:new Map(), checked:new Set(), items:[], hints:[], spent:0, status:20, total:D.slots[s].locations.length };
+queue.forEach(([s, l], q) => W[s].info.set(l, placed[q]));
+for(const s of slots){ W[s].times = []; W[s].prog = []; for(const it of D.slots[s].pre){ W[s].items.push({ item:it, location:-2, player:0, flags:0 }); W[s].times.push(-1); } }
 let order = 0;   // checks found before the page opened get times spread over the last six hours
 const cost = s => S.hintCost ? Math.max(1, Math.floor(S.hintCost * 0.01 * W[s].total)) : 0;
 const points = s => W[s].checked.size + 2 * cost(s) - W[s].spent;   // a starting bonus so the demo can afford a few hints
-
-// the order things get found: sphere by sphere, shuffled inside each sphere
-const queue = [], inQueue = new Set();
-for(const sp of D.spheres){
-  const pairs = [];
-  for(const [s, locs] of Object.entries(sp)) for(const l of locs) pairs.push([+s, l]);
-  for(const p of shuffle(pairs)){ queue.push(p); inQueue.add(p[0] + ":" + p[1]); }
-}
-const rest = [];
-for(const s of slots) for(const l of W[s].info.keys()) if(!inQueue.has(s + ":" + l)) rest.push([s, l]);
-queue.push(...shuffle(rest));
 
 // how far along everyone is when the page opens; the smallest world has already reached its goal
 const smallest = slots.reduce((a, b) => W[b].total < W[a].total ? b : a);
@@ -120,7 +146,7 @@ S.hintCost = D.hint_cost;
 const players = slots.map(s => ({ team:0, slot:s, name:D.slots[s].name, alias:D.slots[s].name }));
 const slotInfo = Object.fromEntries(slots.map(s => [s, { name:D.slots[s].name, game:D.slots[s].game, type:1, group_members:[] }]));
 S.slotName = D.slots[slots[0]].name;   // "I'm playing as" starts on the first player so hints work straight away
-const snap = { seed:"DEMO-" + D.seed.slice(0, 6), team:0, hint_cost:D.hint_cost, slots:{} };
+const snap = { seed:D.seed, team:0, hint_cost:D.hint_cost, slots:{} };
 for(const s of slots){
   const w = W[s];
   snap.slots[s] = { connected:{ slot:s, team:0, players, slot_info:slotInfo, slot_data:D.slots[s].slot_data,
@@ -206,7 +232,7 @@ function answer(s, text){
 /* ---------- the demo bar ---------- */
 const bar = document.createElement("div");
 bar.className = "demo-bar"; bar.setAttribute("role", "status");
-bar.innerHTML = `<span class="demo-tag">Demo</span><span class="demo-txt">Made-up players on a generated seed. No Archipelago server is involved. New checks come in every few seconds, hints are answered as the server would, and some players are away so their History tab shows what they missed.</span>
+bar.innerHTML = `<span class="demo-tag">Demo</span><span class="demo-txt">Made-up players, one for each game tracker. No Archipelago server is involved. New checks come in every few seconds, hints are answered as the server would, and some players are away so their History tab shows what they missed.${without ? ` ${without} installed game tracker${without === 1 ? " has" : "s have"} no demo data yet, so ${without === 1 ? "it isn't" : "they aren't"} in the demo.` : ""}</span>
   <span class="demo-btns"><button type="button" class="ghost" id="demoPause">Pause</button><button type="button" class="ghost" id="demoReset">Start over</button></span>`;
 const board = document.getElementById("boardView"); board.insertBefore(bar, board.firstChild);
 const leave = document.getElementById("leaveBtn"); if(leave) leave.hidden = true;

@@ -73,3 +73,7 @@ game's name so styles don't leak into other games.
 
 Put images in your folder (e.g. `img/`) and use `t.url("img/sword.png")`. Only use images you
 are allowed to share.
+
+## Demo data (optional)
+
+A `demo.json` next to `game.json` puts a made-up player for this game into the tracker demo (`?demo`), so the tracker can be tried without a server. Make it with `tools/make_demo.py --game "Exact Game Name"` from an Archipelago source checkout (see the main README). Without the file, the game is just left out of the demo.
