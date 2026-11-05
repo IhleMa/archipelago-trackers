@@ -23,7 +23,7 @@ for(const s of slots){
   const x = D.slots[s];
   W[s] = { info:new Map(x.locs.map(l => [l[0], [l[1], l[2], l[3]]])), checked:new Set(), items:[], hints:[], spent:0, status:20, total:x.locs.length };
 }
-for(const s of slots){ W[s].times = []; for(const it of D.slots[s].pre || []){ W[s].items.push({ item:it, location:-2, player:0, flags:0 }); W[s].times.push(-1); } }
+for(const s of slots){ W[s].times = []; W[s].prog = []; for(const it of D.slots[s].pre || []){ W[s].items.push({ item:it, location:-2, player:0, flags:0 }); W[s].times.push(-1); } }
 let order = 0;   // checks found before the page opened get times spread over the last six hours
 const cost = s => S.hintCost ? Math.max(1, Math.floor(S.hintCost * 0.01 * W[s].total)) : 0;
 const points = s => W[s].checked.size + 2 * cost(s) - W[s].spent;   // a starting bonus so the demo can afford a few hints
@@ -67,6 +67,7 @@ function check(s, l, live){
   w.checked.add(l);
   const got = { item, location:l, player:s, flags };
   W[recv].items.push(got); W[recv].times.push(live ? Math.round(Date.now() / 1000) : order++);
+  if(!live) w.prog.push([order - 1, w.checked.size]);
   const touched = new Set();
   for(const who of new Set([s, recv])) for(const h of W[who].hints) if(!h.found && h.finding_player === s && h.location === l){ h.found = true; h.status = 40; touched.add(who); }
   const line = sendLine(s, l, info);
@@ -99,7 +100,13 @@ function addHint(recv, finder, l, item, flags){
 
 /* ---------- when things arrived, and who's in game ---------- */
 const NOW = Math.round(Date.now() / 1000), H = 3600, WINDOW = 6 * H;
-for(const s of slots) W[s].times = W[s].times.map(k => k < 0 ? NOW - WINDOW - 300 : Math.round(NOW - WINDOW + (k / Math.max(1, order)) * (WINDOW - 120)));
+const at = k => k < 0 ? NOW - WINDOW - 300 : Math.round(NOW - WINDOW + (k / Math.max(1, order)) * (WINDOW - 120));
+for(const s of slots){
+  W[s].times = W[s].times.map(at);
+  const prog = [[NOW - WINDOW - 300, 0]];   // checks over time, one point per minute at most, like the relay keeps them
+  for(const [k, n] of W[s].prog){ const t = at(k), last = prog[prog.length - 1]; if(prog.length >= 2 && t - last[0] < 60) last[1] = n; else prog.push([t, n]); }
+  W[s].prog = prog;
+}
 // some players are in game; others left a while ago and have been receiving items since
 const away = new Set(slots.filter((s, i) => i % 3 === 1));
 for(const s of slots){
@@ -118,7 +125,7 @@ for(const s of slots){
   const w = W[s];
   snap.slots[s] = { connected:{ slot:s, team:0, players, slot_info:slotInfo, slot_data:D.slots[s].slot_data,
       checked_locations:[...w.checked], missing_locations:[...w.info.keys()].filter(l => !w.checked.has(l)), hint_points:points(s) },
-    items:w.items, times:w.times, status:w.status, hints:w.hints, conn:"connected", online:w.online, sessions:w.sessions };
+    items:w.items, times:w.times, status:w.status, hints:w.hints, conn:"connected", online:w.online, sessions:w.sessions, progress:w.prog };
 }
 T.applySnap(snap);
 for(const line of prelude.filter(() => rnd() < 0.06)) T.onPrint(line);   // a recent-looking feed from across the multiworld

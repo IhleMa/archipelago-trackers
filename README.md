@@ -34,6 +34,7 @@ The server runs a small relay (`relay/relay.py`, standard-library Python; the in
 - **Server password:** the relay knows the room's password and asks viewers for it before showing anything. The admin password is never passed to it.
 - **Hints:** hint requests go through the relay and are spent from that player's own points. Only `!hint` and `!hint_location` can be sent this way.
 - **Unlock history:** the relay records when each item arrived and when each player's game connects and leaves, in `relay/relay-history.json`. Every slot gets a History tab, and when a player has been away from their game, it shows what came in meanwhile at the top. The board shows "new while away" on their card. Join and leave only count for the game client itself, not trackers or text clients. Items that arrived while the relay wasn't running are listed without a time.
+- **Progress over time:** below the slots, a chart shows each player's share of checks over the session (last 6 h, last 24 h or all), with a table of checks in the last hour and checks per hour while their game was connected. The relay keeps this in the same history file.
 - **Without the relay:** if Python isn't there, busybox serves the page and each page connects to the server itself, as before. You can force that per page with `?direct`.
 
 ## Demo mode

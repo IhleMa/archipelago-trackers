@@ -5,7 +5,7 @@
    games/<folder>/ (see games/README.md). */
 "use strict";
 (() => {
-const VERSION = "1.2.0";
+const VERSION = "1.3.0";
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const store = {
@@ -23,7 +23,7 @@ const S = {
   slots:{},    // slot -> {checked:Set, missing:Set, items:[], status, conn, hints:[], points, slotData}
   dp:{},       // game -> {items:{id:name}, locs:{id:name}}
   feed:[], me:null, view:null, tab:null,
-  filter:"", show:"missing", hintQ:"", itemQ:"", pending:null, histProg:false, histCap:200
+  filter:"", show:"missing", hintQ:"", itemQ:"", pending:null, histProg:false, histCap:200, range:0, focus:null, hoverX:null
 };
 const conns = new Map();
 let primary = null, stopped = true, relayES = null;
@@ -92,7 +92,13 @@ const itemName  = (game, id) => S.dp[game]?.items[id] ?? `Item ${id}`;
 const locName   = (game, id) => S.dp[game]?.locs[id] ?? `Location ${id}`;
 const itemId    = (game, name) => S.dp[game]?.itemIds?.[name];
 const itemClass = f => f & 4 ? "it-trap" : f & 1 ? "it-prog" : f & 2 ? "it-useful" : "";
-const ensureSlot = s => S.slots[s] || (S.slots[s] = { checked:new Set(), missing:new Set(), items:[], times:[], status:0, conn:"connecting", hints:[], points:null, slotData:null, online:null, sessions:[], games:0 });
+const ensureSlot = s => S.slots[s] || (S.slots[s] = { checked:new Set(), missing:new Set(), items:[], times:[], status:0, conn:"connecting", hints:[], points:null, slotData:null, online:null, sessions:[], games:0, prog:[] });
+/** Progress over time: [unix seconds, checks done], one point per change (checks within a minute share one). */
+function noteChecks(sl){
+  const c = sl.prog, now = Math.round(Date.now() / 1000), n = sl.checked.size;
+  if(c.length && c[c.length - 1][1] === n) return;
+  if(c.length >= 2 && now - c[c.length - 1][0] < 60) c[c.length - 1][1] = n; else c.push([now, n]);
+}
 const counts = s => { const sl = S.slots[s]; const c = sl.checked.size; return { c, t: c + sl.missing.size }; };
 const pct = s => { const { c, t } = counts(s); return t ? c / t : 0; };
 const slotList = () => Object.keys(S.players).map(Number).filter(s => S.players[s].type !== 2 && S.slots[s]).sort((a, b) => pct(b) - pct(a) || slotAlias(a).localeCompare(slotAlias(b)));
@@ -169,6 +175,7 @@ class Conn {
         for(const [k, info] of Object.entries(m.slot_info || {})) S.players[k] = { ...S.players[k], name:S.players[k]?.name || info.name, game:info.game, type:info.type };
         const sl = ensureSlot(m.slot);
         sl.checked = new Set(m.checked_locations); sl.missing = new Set(m.missing_locations);
+        if(!S.cfg.relay) noteChecks(sl);
         if(m.hint_points != null) sl.points = m.hint_points;
         if(m.slot_data) sl.slotData = m.slot_data;
         this.setState("connected");
@@ -189,6 +196,7 @@ class Conn {
         if(this.slot != null){
           const sl = ensureSlot(this.slot); let n = 0;
           for(const l of m.checked_locations || []) if(!sl.checked.has(l)){ sl.checked.add(l); sl.missing.delete(l); n++; }
+          if(n) noteChecks(sl);
           if(m.hint_points != null) sl.points = m.hint_points;
           if(n) flash(this.slot);
         }
@@ -334,6 +342,7 @@ function applySnap(sn){
     c.handle(Object.assign({ cmd:"Connected" }, x.connected));
     c.handle({ cmd:"ReceivedItems", index:0, items:x.items || [], times:x.times });
     const sl = ensureSlot(slot); if(x.online !== undefined) sl.online = x.online; if(x.sessions) sl.sessions = x.sessions;
+    if(x.progress) sl.prog = x.progress.map(p => p.slice());
     storeKey(`_read_client_status_${S.team}_${slot}`, x.status);
     storeKey(`_read_hints_${S.team}_${slot}`, x.hints);
     c.setState(x.conn || "connected");
@@ -481,6 +490,7 @@ function draw(){
   $("sChecks").textContent = `${c} / ${t}`; $("sBar").style.width = p + "%"; $("sPct").textContent = p + "%";
   $("sGoals").textContent = `${g} / ${list.length}`; $("sItems").textContent = n;
   $("grid").innerHTML = list.map(cardHtml).join("") || '<p class="empty">Waiting for slot data from the server…</p>';
+  if(S.view == null) drawProgress();
   if(S.view != null) drawDetail();
 }
 function cardHtml(s){
@@ -504,8 +514,8 @@ function renderFeed(){
 }
 
 /* ---------- slot detail ---------- */
-function openSlot(s){ S.view = s; S.tab = null; S.histCap = 200; S.filter = ""; S.show = "missing"; S.hintQ = ""; S.itemQ = ""; $("listView").hidden = true; $("detailView").hidden = false; setHash("slot-" + s); drawDetail(); window.scrollTo(0, 0); }
-function closeSlot(){ S.view = null; $("listView").hidden = false; $("detailView").hidden = true; setHash(""); render(); }
+function openSlot(s){ S.view = s; S.tab = null; S.histCap = 200; S.filter = ""; S.show = "missing"; S.hintQ = ""; S.itemQ = ""; $("listView").hidden = true; $("progView").hidden = true; $("detailView").hidden = false; setHash("slot-" + s); drawDetail(); window.scrollTo(0, 0); }
+function closeSlot(){ S.view = null; $("listView").hidden = false; $("progView").hidden = false; $("detailView").hidden = true; setHash(""); render(); }
 function setHash(h){ try { history.replaceState(null, "", h ? "#" + h : location.pathname + location.search); } catch(e){} }
 function readHash(){ const m = /^#slot-(\d+)$/.exec(location.hash); if(m && S.players[m[1]]) openSlot(+m[1]); }
 
@@ -590,6 +600,96 @@ function checksView(s, P){
   if(!shownCount) out += '<p class="empty">No checks match.</p>';
   return out;
 }
+
+/* ---------- progress over time ---------- */
+// Each player's checks as a share of their world, so big and small worlds compare fairly.
+// Colors follow the slot (its place among all players), never the ranking.
+const SERIES = 8;
+const seriesOf = s => { const all = Object.keys(S.players).map(Number).filter(k => S.players[k].type !== 2).sort((a, b) => a - b); const i = all.indexOf(s); return i >= 0 && i < SERIES ? i + 1 : 0; };
+const progAt = (pts, t) => { let v = null; for(const [pt, n] of pts){ if(pt > t) break; v = n; } return v; };
+function pace(s){
+  const sl = S.slots[s], pts = sl.prog, now = Date.now() / 1000;
+  if(!pts.length) return { hour:null, rate:null };
+  const at = t => progAt(pts, t) ?? pts[0][1];
+  const hour = sl.checked.size - at(now - 3600);
+  let gain = 0, secs = 0;
+  for(const [a, b] of sl.sessions || []){
+    if(a == null) continue;
+    const end = b ?? now, from = Math.max(a, pts[0][0]);
+    if(end <= from) continue;
+    gain += at(end) - at(from); secs += end - from;
+  }
+  if(!secs){ secs = now - pts[0][0]; gain = sl.checked.size - pts[0][1]; }   // no join/leave seen: the whole recorded span
+  return { hour, rate:secs >= 900 ? gain / (secs / 3600) : null };
+}
+function niceStep(span){
+  for(const m of [5, 10, 15, 30, 60, 120, 180, 360, 720, 1440, 2880, 10080]) if(span / (m * 60) <= 6) return m * 60;
+  return 20160 * 60;
+}
+function drawProgress(){
+  const box = $("progBody"); if(!box || $("progView").hidden) return;
+  document.querySelectorAll("#progView [data-range]").forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.range === S.range)));
+  const list = slotList().filter(s => S.slots[s].prog.length), now = Date.now() / 1000;
+  if(!list.length){ box.innerHTML = `<p class="empty">The chart fills in as checks come in. ${S.cfg.relay ? "" : "Without the relay it only covers the time this page has been open."}</p>`; return; }
+  const first = Math.min(...list.map(s => S.slots[s].prog[0][0]));
+  const t0 = S.range ? Math.max(first, now - S.range * 3600) : first, t1 = now;
+  const pctAt = (s, t) => { const v = progAt(S.slots[s].prog, t); const { t:tot } = counts(s); return v == null || !tot ? null : v / tot * 100; };
+  let top = 0; for(const s of list){ const { c, t } = counts(s); top = Math.max(top, t ? c / t * 100 : 0); }
+  const yMax = top > 50 ? 100 : top > 25 ? 50 : top > 10 ? 25 : 10, yStep = yMax / 5;
+  const W = Math.max(280, box.clientWidth - 32), H = W < 520 ? 200 : 260, L = 40, R = 14, T = 10, B = 26;
+  const x = t => L + (t - t0) / Math.max(1, t1 - t0) * (W - L - R), y = p => T + (1 - p / yMax) * (H - T - B);
+  const step = niceStep(t1 - t0), longSpan = t1 - t0 > 36 * 3600;
+  let grid = "";
+  for(let p = 0; p <= yMax + 1e-9; p += yStep) grid += `<line class="pg-grid" x1="${L}" x2="${W - R}" y1="${y(p)}" y2="${y(p)}"/><text class="pg-ax" x="${L - 6}" y="${y(p) + 4}" text-anchor="end">${Math.round(p)}%</text>`;
+  const off = new Date().getTimezoneOffset() * 60;
+  for(let t = Math.ceil((t0 - off) / step) * step + off; t <= t1; t += step){
+    const d = new Date(t * 1000), lbl = longSpan && step >= 86400 ? d.toLocaleDateString([], { weekday:"short", day:"numeric" }) : d.getHours() === 0 && d.getMinutes() === 0 ? d.toLocaleDateString([], { weekday:"short" }) : clock(t);
+    grid += `<text class="pg-ax" x="${x(t)}" y="${H - 6}" text-anchor="middle">${esc(lbl)}</text>`;
+  }
+  let lines = "", dots = "";
+  for(const s of list){
+    const k = seriesOf(s), pts = S.slots[s].prog, { t:tot } = counts(s); if(!tot) continue;
+    const start = progAt(pts, t0);
+    let d = start != null ? `M${x(t0)},${y(start / tot * 100)}` : "";
+    for(const [t, n] of pts){ if(t <= t0) continue; const yy = y(n / tot * 100); d += d ? `H${x(t)}V${yy}` : `M${x(t)},${yy}`; }
+    if(!d) continue;
+    const endY = y(S.slots[s].checked.size / tot * 100); d += `H${x(t1)}V${endY}`;
+    const dim = S.focus != null && S.focus !== s ? " dim" : "";
+    lines += `<path class="pg-line s${k}${dim}" d="${d}"/>`;
+    dots += `<circle class="pg-dot s${k}${dim}" cx="${x(t1)}" cy="${endY}" r="4"/>`;
+  }
+  const rows = list.slice().sort((a, b) => seriesOf(a) - seriesOf(b) || a - b).map(s => {
+    const { c, t } = counts(s), p = pace(s), k = seriesOf(s);
+    return `<tr class="${S.focus != null && S.focus !== s ? "dim" : ""}"><th scope="row"><button type="button" class="pg-key" data-focus="${s}" aria-pressed="${S.focus === s}"><i class="sw s${k}"></i>${esc(slotAlias(s))}</button></th>
+      <td>${t ? Math.floor(c / t * 100) : 0}%</td><td class="pg-n">${c} / ${t}</td><td>${p.hour == null ? "–" : (p.hour > 0 ? "+" : "") + p.hour}</td><td>${p.rate == null ? "–" : p.rate < 10 ? p.rate.toFixed(1) : Math.round(p.rate)}</td></tr>`;
+  }).join("");
+  box.innerHTML = `<div class="pg-plot" id="pgPlot"><svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Each player's share of checks done over time. The table below has the same numbers.">
+      ${grid}<g>${lines}</g><g>${dots}</g><line class="pg-cross" id="pgCross" x1="0" x2="0" y1="${T}" y2="${H - B}" hidden/></svg><div class="pg-tip" id="pgTip" hidden></div></div>
+    <div class="pg-tablewrap"><table class="pg-table"><thead><tr><th scope="col">Player</th><th scope="col">Done</th><th scope="col" class="pg-n">Checks</th><th scope="col">Last hour</th><th scope="col" title="Checks per hour while their game was connected">Per hour played</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <p class="sub" style="margin:0">Click a player to pick out their line. ${S.cfg.relay ? "Per hour played counts only the time their game was connected." : "Without the relay this covers only the time this page has been open."}</p>`;
+  S.pv = { t0, t1, L, R, W, list };
+  if(S.hoverX != null) hoverProgress(S.hoverX);
+}
+function hoverProgress(px){
+  const v = S.pv, tip = $("pgTip"), cross = $("pgCross"); if(!v || !tip) return;
+  if(px == null || px < v.L || px > v.W - v.R){ tip.hidden = true; cross.setAttribute("hidden", ""); return; }
+  const t = v.t0 + (px - v.L) / (v.W - v.L - v.R) * (v.t1 - v.t0);
+  cross.removeAttribute("hidden"); cross.setAttribute("x1", px); cross.setAttribute("x2", px);
+  const rows = v.list.map(s => { const n = progAt(S.slots[s].prog, t), { t:tot } = counts(s); return { s, n, p:n == null || !tot ? null : n / tot * 100 }; })
+    .filter(r => r.n != null).sort((a, b) => b.p - a.p);
+  tip.innerHTML = `<b>${esc(when(t))}</b>` + (rows.length ? rows.map(r => `<div><i class="sw s${seriesOf(r.s)}"></i><span>${esc(slotAlias(r.s))}</span><b>${Math.floor(r.p)}%</b><span class="sub">${r.n}</span></div>`).join("") : '<div class="sub">No checks recorded yet</div>');
+  tip.hidden = false;
+  const plot = $("pgPlot"), w = tip.offsetWidth, room = plot.clientWidth;
+  tip.style.left = (px + 14 + w > room ? Math.max(0, px - 14 - w) : px + 14) + "px";
+}
+document.addEventListener("pointermove", e => {
+  const svg = e.target.closest && e.target.closest("#pgPlot svg");
+  if(!svg){ if(S.hoverX != null){ S.hoverX = null; hoverProgress(null); } return; }
+  const r = svg.getBoundingClientRect(); S.hoverX = (e.clientX - r.left) * (S.pv.W / r.width); hoverProgress(S.hoverX);
+});
+let progResize = 0;
+window.addEventListener("resize", () => { clearTimeout(progResize); progResize = setTimeout(drawProgress, 150); });
+setInterval(() => { if(S.view == null && !$("boardView").hidden) drawProgress(); }, 60000);   // the lines run on to "now"
 
 /* ---------- unlock history ---------- */
 const clock = t => new Date(t * 1000).toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" });
@@ -691,6 +791,8 @@ document.addEventListener("click", e => {
   if(b.dataset.slot != null){ openSlot(+b.dataset.slot); return; }
   if(b.dataset.tab){ S.tab = b.dataset.tab; drawDetail(); return; }
   if(b.dataset.show){ S.show = b.dataset.show; drawDetail(); return; }
+  if(b.dataset.range != null){ S.range = +b.dataset.range; S.hoverX = null; drawProgress(); return; }
+  if(b.dataset.focus != null){ S.focus = S.focus === +b.dataset.focus ? null : +b.dataset.focus; drawProgress(); return; }
   if(b.dataset.hist){ S.histProg = b.dataset.hist === "prog"; S.histCap = 200; drawDetail(); return; }
   if(b.id === "histMore"){ S.histCap += 400; drawDetail(); return; }
   if(b.id === "backBtn") return closeSlot();

@@ -20,7 +20,7 @@ import asyncio, base64, collections, email.utils, gzip, hashlib, hmac, json, os,
 import sys, threading, time, urllib.parse, uuid, zlib
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 
-VERSION = "1.2.0"
+VERSION = "1.3.0"
 PORT = int(os.environ.get("TRACKER_PORT") or 0)
 AP_HOST = "127.0.0.1"
 AP_PORT = int(os.environ.get("AP_PORT") or 38281)
@@ -148,7 +148,7 @@ class Relay:
                 c["slot_info"] = self.slot_info
                 h = hist(s)
                 out[s] = {"connected": c, "items": st["items"], "status": st["status"], "hints": st["hints"], "conn": st["conn"],
-                          "times": h["times"], "online": h["online"], "sessions": h["sessions"]}
+                          "times": h["times"], "online": h["online"], "sessions": h["sessions"], "progress": h["checks"]}
             return {"seed": self.seed, "team": self.team, "hint_cost": self.hint_cost, "slots": out, "version": VERSION}
 
 
@@ -185,7 +185,7 @@ def load_state():
 def hist(slot):
     h = R.hist.get(slot)
     if h is None:
-        h = R.hist[slot] = {"times": [], "sessions": [], "games": 0, "online": None}
+        h = R.hist[slot] = {"times": [], "sessions": [], "games": 0, "online": None, "checks": []}
     return h
 
 
@@ -207,7 +207,8 @@ def load_history(seed):
         if sessions and sessions[-1][1] is None:     # the relay stopped while this game was connected
             sessions[-1][1] = saved_at
         # the relay restarts together with the Archipelago server, which drops every game, so they start offline
-        R.hist[int(k)] = {"times": list(v.get("times") or []), "sessions": sessions, "games": 0, "online": False if sessions else None}
+        R.hist[int(k)] = {"times": list(v.get("times") or []), "sessions": sessions, "games": 0, "online": False if sessions else None,
+                          "checks": [list(x) for x in v.get("checks") or [] if isinstance(x, list) and len(x) == 2]}
 
 
 def save_history_soon():
@@ -223,7 +224,7 @@ def save_history():
         if not R.hist_seed:
             return
         d = {"seed": R.hist_seed, "saved": time.time(),
-             "slots": {str(k): {"times": v["times"], "sessions": v["sessions"][-100:]} for k, v in R.hist.items()}}
+             "slots": {str(k): {"times": v["times"], "sessions": v["sessions"][-100:], "checks": v["checks"]} for k, v in R.hist.items()}}
     try:
         tmp = HISTORY_FILE + ".tmp"
         with open(tmp, "w") as f:
@@ -231,6 +232,20 @@ def save_history():
         os.replace(tmp, HISTORY_FILE)
     except OSError as e:
         log(f"couldn't save the unlock history: {e}")
+
+
+def note_checks(slot, count):
+    """Progress over time: [time, checks done] whenever the count changes. Called with the lock held."""
+    h, now = hist(slot), round(time.time())
+    c = h["checks"]
+    if c and c[-1][1] == count:
+        return
+    if len(c) >= 2 and now - c[-1][0] < 60:   # several checks within a minute share one point
+        c[-1][1] = count
+    else:
+        c.append([now, count])
+    del c[:-5000]
+    save_history_soon()
 
 
 def presence(m):
@@ -381,6 +396,7 @@ class SlotConn:
             c = {k: v for k, v in m.items() if k not in ("checked_locations", "missing_locations", "players", "slot_info", "hint_points")}
             st.update(connected=c, checked=set(m.get("checked_locations") or []), missing=set(m.get("missing_locations") or []),
                       points=m.get("hint_points"), conn="connected")
+            note_checks(self.slot, len(st["checked"]))
             R.ready = True
         broadcast("pkt", {"slot": self.slot, "m": dict(self_connected(self.slot), cmd="Connected")})
         broadcast("state", {"slot": self.slot, "conn": "connected"})
@@ -419,6 +435,8 @@ class SlotConn:
                 for l in m.get("checked_locations") or []:
                     st["checked"].add(l)
                     st["missing"].discard(l)
+                if m.get("checked_locations"):
+                    note_checks(self.slot, len(st["checked"]))
                 if m.get("hint_points") is not None:
                     st["points"] = m["hint_points"]
             for p in m.get("players") or []:
