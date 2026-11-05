@@ -5,7 +5,7 @@
    games/<folder>/ (see games/README.md). */
 "use strict";
 (() => {
-const VERSION = "1.1.0";
+const VERSION = "1.2.0";
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const store = {
@@ -120,6 +120,7 @@ class Conn {
     ws.onclose = () => {
       if(stopped || this.state === "refused") return;
       if(!this.opened && this.urlIdx < this.urls.length - 1){ this.urlIdx++; return this.open(); }
+      this.urlIdx = 0;   // every retry starts with the plain address again; otherwise a server restart leaves it stuck on wss://
       this.setState("offline");
       setTimeout(() => this.open(), Math.min(30000, 2000 * 2 ** this.tries++));
     };
@@ -319,6 +320,11 @@ function openStream(){
   };
 }
 function applySnap(sn){
+  // a page left open from before a tracker update reloads itself (once per version) instead of running old code
+  if(sn.version && sn.version !== VERSION){
+    let done = null; try { done = sessionStorage.getItem("aptracker.reloaded"); } catch(e){}
+    if(done !== sn.version){ try { sessionStorage.setItem("aptracker.reloaded", sn.version); } catch(e){} location.reload(); return; }
+  }
   if(S.seed && sn.seed && sn.seed !== S.seed){ relayStart(); return; }
   S.seed = sn.seed || S.seed; S.team = sn.team || 0; if(sn.hint_cost != null) S.hintCost = sn.hint_cost;
   for(const [k, x] of Object.entries(sn.slots || {})){
