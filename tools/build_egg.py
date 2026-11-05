@@ -35,11 +35,13 @@ def bundle(games):
         for rel in files:
             if "/img/" in rel and not rel.endswith("NOTICE.txt"):
                 continue
-            ti = tar.gettarinfo(os.path.join(ROOT, rel), rel)
+            data = open(os.path.join(ROOT, rel), "rb").read()
+            if rel.endswith((".js", ".css")):   # the fallback copy only: indentation is dead weight in 64 KB
+                data = b"\n".join(l.strip() for l in data.split(b"\n") if l.strip())
+            ti = tarfile.TarInfo(rel); ti.size = len(data)
             ti.uid = ti.gid = 0; ti.uname = ti.gname = "root"; ti.mtime = 0
             ti.mode = 0o755 if rel.startswith("tracker/cgi-bin/") else 0o644
-            with open(os.path.join(ROOT, rel), "rb") as fh:
-                tar.addfile(ti, fh)
+            tar.addfile(ti, io.BytesIO(data))
     xz = subprocess.run(["xz", "-9e", "-c"], input=buf.getvalue(), capture_output=True, check=True).stdout
     return base64.encodebytes(xz).decode(), len(xz)
 
@@ -61,6 +63,38 @@ fi
 echo "Using seed: ${SEED}"
 
 # ---- Live tracker: a web page on TRACKER_PORT that follows every slot live
+start_relay() {
+    # The relay holds one tracker connection per slot and shares it with every open page.
+    # It gets only what it needs; the admin password never reaches it.
+    env -i PATH=/usr/bin:/bin HOME=/home/container TRACKER_PORT="${TRACKER_PORT}" AP_PORT="${SERVER_PORT}" \
+        AP_PASSWORD="${SERVER_PASSWORD}" TRACKER_DIR=/home/container/tracker RELAY_STATE=/home/container/relay/state.json \
+        ./relay/python/bin/python3 -u ./relay/relay.py >> ./relay/relay.log 2>&1 &
+    echo $! > ./relay/relay.pid
+    sleep 1
+}
+stop_relay() {
+    local pid; pid=$(cat ./relay/relay.pid 2>/dev/null) || return 0
+    kill "${pid}" 2>/dev/null
+    for _ in 1 2 3 4 5 6 7 8 9 10; do kill -0 "${pid}" 2>/dev/null || break; sleep 0.3; done
+    kill -9 "${pid}" 2>/dev/null; rm -f ./relay/relay.pid
+}
+# "tracker update" in the console: new tracker files from Tracker Files, then only the relay restarts.
+# The Archipelago server and everyone's games keep running.
+update_tracker() {
+    if [ ! -f ./bin/update-tracker.sh ]; then echo "[tracker] This install has no update script yet. Reinstall the server once to add it."; return; fi
+    echo "[tracker] Updating the tracker from ${TRACKER_REPO}…"
+    bash ./bin/update-tracker.sh || return
+    if [ "${STARTED}" = "relay" ]; then
+        stop_relay; start_relay
+        if kill -0 "$(cat ./relay/relay.pid 2>/dev/null)" 2>/dev/null; then
+            echo "[tracker] Tracker relay restarted. Open tracker pages reload by themselves."
+        else
+            echo "[tracker] The tracker relay didn't come back up:"; tail -n 5 ./relay/relay.log
+        fi
+    else
+        echo "[tracker] Done. Reload the tracker page to see the changes."
+    fi
+}
 start_busybox() {
     # without the relay: busybox serves the files and every page connects to the server itself
     [ -x ./bin/busybox ] || return 1
@@ -75,14 +109,9 @@ if [ -n "${TRACKER_PORT}" ] && [ "${TRACKER_PORT}" != "0" ]; then
         printf '{"port":%s,"slot":"%s","title":"%s"}\n' "${SERVER_PORT}" "$(clean "${TRACKER_SLOT}")" "$(clean "${TRACKER_TITLE}")" > tracker/config.json
         STARTED=""
         if [ -x ./relay/python/bin/python3 ] && [ -f ./relay/relay.py ]; then
-            # The relay holds one tracker connection per slot and shares it with every open page.
-            # It gets only what it needs; the admin password never reaches it.
-            env -i PATH=/usr/bin:/bin HOME=/home/container TRACKER_PORT="${TRACKER_PORT}" AP_PORT="${SERVER_PORT}" \
-                AP_PASSWORD="${SERVER_PASSWORD}" TRACKER_DIR=/home/container/tracker RELAY_STATE=/home/container/relay/state.json \
-                ./relay/python/bin/python3 -u ./relay/relay.py > ./relay/relay.log 2>&1 &
-            RELAY_PID=$!
-            sleep 1
-            if kill -0 "${RELAY_PID}" 2>/dev/null; then STARTED="relay"; else tail -n 3 ./relay/relay.log; fi
+            : > ./relay/relay.log
+            start_relay
+            if kill -0 "$(cat ./relay/relay.pid)" 2>/dev/null; then STARTED="relay"; else tail -n 3 ./relay/relay.log; fi
         fi
         if [ -z "${STARTED}" ] && start_busybox; then STARTED="busybox"; fi
         case "${STARTED}" in
@@ -105,7 +134,31 @@ ARGS+=(--collect_mode "${COLLECT_MODE:-auto}")
 ARGS+=(--remaining_mode "${REMAINING_MODE:-goal}")
 ARGS+=(--auto_shutdown "${AUTO_SHUTDOWN:-0}")
 
-exec ./Archipelago/ArchipelagoServer "${ARGS[@]}" "${SEED}"
+# The console goes through this script so it can catch "tracker update"; everything else is passed on to
+# the Archipelago server unchanged (including the panel's stop command, /exit).
+CONSOLE=/home/container/.console
+rm -f "${CONSOLE}"; mkfifo "${CONSOLE}"
+./Archipelago/ArchipelagoServer "${ARGS[@]}" "${SEED}" < "${CONSOLE}" &
+AP_PID=$!
+exec 3> "${CONSOLE}"
+trap 'kill -TERM "${AP_PID}" 2>/dev/null' TERM INT
+exec 4<&0   # a background job's input would be /dev/null; hand it the console explicitly
+(
+    while IFS= read -r line; do
+        case "$(printf '%s' "${line}" | tr -d '\r' | tr 'A-Z' 'a-z')" in
+            "tracker update"|"/tracker update") update_tracker ;;
+            *) printf '%s\n' "${line}" >&3 ;;
+        esac
+    done
+) <&4 &
+READER=$!
+CODE=0
+while kill -0 "${AP_PID}" 2>/dev/null; do wait "${AP_PID}"; CODE=$?; done
+kill "${READER}" 2>/dev/null
+stop_relay
+pkill -f "busybox httpd -p 0.0.0.0:${TRACKER_PORT}" 2>/dev/null
+rm -f "${CONSOLE}"
+exit "${CODE}"
 '''
 
 INSTALL = r'''#!/bin/bash
@@ -183,6 +236,7 @@ done
 cp "${SRC}/tracker/games/README.md" tracker/games/README.md
 cp "${SRC}/relay/relay.py" relay/relay.py
 cp "${SRC}/bin/httpd.conf" bin/httpd.conf
+[ -f "${SRC}/bin/update-tracker.sh" ] && cp "${SRC}/bin/update-tracker.sh" bin/update-tracker.sh
 chmod +x tracker/cgi-bin/*
 rm -rf "${TMP}"
 

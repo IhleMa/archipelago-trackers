@@ -167,10 +167,11 @@ dialog::backdrop{background:rgba(5,12,16,.55)}
 .away-note{font-size:13px;font-weight:600;color:var(--gold);display:flex;align-items:center;gap:6px}
 .away-note::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--gold)}
 
-/* progress over time. Series colors follow the slot; validated for both themes (light: three sit under 3:1, so the table carries the numbers) */
-#progView{--s1:#2a78d6;--s2:#eb6834;--s3:#1baf7a;--s4:#eda100;--s5:#e87ba4;--s6:#008300;--s7:#6250d6;--s8:#e34948;--s0:var(--muted)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) #progView{--s1:#3987e5;--s2:#d95926;--s3:#199e70;--s4:#c98500;--s5:#d55181;--s6:#008300;--s7:#9085e9;--s8:#e66767}}
-:root[data-theme="dark"] #progView{--s1:#3987e5;--s2:#d95926;--s3:#199e70;--s4:#c98500;--s5:#d55181;--s6:#008300;--s7:#9085e9;--s8:#e66767}
+/* player colors: --sN for chart marks (validated for both themes; light: three sit under 3:1, so the table carries the numbers),
+   --tN the same hues stepped to 4.5:1 for names in text. N is the player's slot order, never their rank. */
+:root{--s1:#2a78d6;--s2:#eb6834;--s3:#1baf7a;--s4:#eda100;--s5:#e87ba4;--s6:#008300;--s7:#6250d6;--s8:#e34948;--t1:#1b6cc9;--t2:#c14100;--t3:#007d4c;--t4:#a15a00;--t5:#b14a74;--t6:#008000;--t7:#6250d6;--t8:#cd3336;--s0:var(--muted)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--s1:#3987e5;--s2:#d95926;--s3:#199e70;--s4:#c98500;--s5:#d55181;--s6:#008300;--s7:#9085e9;--s8:#e66767;--t1:#3c8ae8;--t2:#e46331;--t3:#199e70;--t4:#c98500;--t5:#e05b8a;--t6:#2e9c2a;--t7:#9085e9;--t8:#e66767}}
+:root[data-theme="dark"]{--s1:#3987e5;--s2:#d95926;--s3:#199e70;--s4:#c98500;--s5:#d55181;--s6:#008300;--s7:#9085e9;--s8:#e66767;--t1:#3c8ae8;--t2:#e46331;--t3:#199e70;--t4:#c98500;--t5:#e05b8a;--t6:#2e9c2a;--t7:#9085e9;--t8:#e66767}
 .prog{gap:14px}
 .pg-plot{position:relative;overflow:hidden}
 .pg-plot svg{display:block;max-width:100%;height:auto;touch-action:pan-y}
@@ -204,3 +205,10 @@ dialog::backdrop{background:rgba(5,12,16,.55)}
 .pg-key{display:inline-flex;align-items:center;gap:8px;padding:2px 4px;border:0;background:none;color:var(--fg);font:inherit;font-weight:500;cursor:pointer}
 .pg-key[aria-pressed="true"]{text-decoration:underline;text-underline-offset:3px}
 @media (max-width:520px){.pg-table .pg-n{display:none}.pg-table th,.pg-table td{padding:6px 5px}}
+.c1{color:var(--t1)}.c2{color:var(--t2)}.c3{color:var(--t3)}.c4{color:var(--t4)}.c5{color:var(--t5)}.c6{color:var(--t6)}.c7{color:var(--t7)}.c8{color:var(--t8)}
+/* item names next to colored player names: a tinted chip in the item's kind, text in normal ink, so items and players never look alike */
+.it{color:var(--fg);font-weight:500;padding:0 5px;border-radius:4px;background:color-mix(in srgb,var(--muted) 14%,transparent);box-decoration-break:clone;-webkit-box-decoration-break:clone}
+.it.it-prog{color:var(--fg);font-weight:600;background:color-mix(in srgb,var(--prog) 20%,transparent)}
+.it.it-useful{color:var(--fg);background:color-mix(in srgb,var(--useful) 22%,transparent)}
+.it.it-trap{color:var(--fg);background:color-mix(in srgb,var(--trap) 20%,transparent)}
+.toast .it{background:rgba(255,255,255,.16);color:inherit}

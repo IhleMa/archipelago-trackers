@@ -25,7 +25,13 @@ Games with their own tracker get a custom view. Every other game gets the generi
 
 Reinstalling pulls the newest version from this repo. Game folders are merged, not replaced, so files you added on the server stay, like the Old School RuneScape map image or game trackers of your own.
 
-If GitHub can't be reached during install, the egg falls back to a built-in copy with the core tracker and the Path of Exile tracker. Every other game uses the generic view until the next successful reinstall.
+If GitHub can't be reached during install, the egg falls back to a built-in copy of the core tracker, where every game uses the generic view until the next successful install or update.
+
+## Updating while people are playing
+
+Type `tracker update` in the server console. It downloads the newest tracker from **Tracker Files** and restarts only the tracker relay. The Archipelago server and everyone's games keep running, and open tracker pages reload by themselves. The chat shows each slot's tracker leave and rejoin once.
+
+Everything else you type in the console goes to the Archipelago server as before, including the panel's stop command. A reinstall is still needed for changes to the egg itself (the start script or install script), and the first time to get this command.
 
 ## How it connects
 

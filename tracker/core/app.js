@@ -5,7 +5,7 @@
    games/<folder>/ (see games/README.md). */
 "use strict";
 (() => {
-const VERSION = "1.3.0";
+const VERSION = "1.4.0";
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const store = {
@@ -101,6 +101,8 @@ function noteChecks(sl){
 }
 const counts = s => { const sl = S.slots[s]; const c = sl.checked.size; return { c, t: c + sl.missing.size }; };
 const pct = s => { const { c, t } = counts(s); return t ? c / t : 0; };
+/** A player's name in their own color (the same one their line has in the progress chart). */
+const pname = s => `<span class="p c${seriesOf(s)}">${esc(slotAlias(s))}</span>`;
 const slotList = () => Object.keys(S.players).map(Number).filter(s => S.players[s].type !== 2 && S.slots[s]).sort((a, b) => pct(b) - pct(a) || slotAlias(a).localeCompare(slotAlias(b)));
 
 /* ================= connection ================= */
@@ -365,8 +367,8 @@ function onRelayReady(){
 /* ================= feed + toasts ================= */
 function jsonText(m){
   return (m.data || []).map(p => {
-    if(p.type === "player_id") return `<span class="p">${esc(slotAlias(+p.text))}</span>`;
-    if(p.type === "item_id") return `<span class="${itemClass(p.flags || 0)}">${esc(itemName(slotGame(p.player), +p.text))}</span>`;
+    if(p.type === "player_id") return pname(+p.text);
+    if(p.type === "item_id") return `<span class="it ${itemClass(p.flags || 0)}">${esc(itemName(slotGame(p.player), +p.text))}</span>`;
     if(p.type === "location_id") return esc(locName(slotGame(p.player), +p.text));
     if(p.type === "hint_status") return "";
     return esc(p.text);
@@ -393,11 +395,11 @@ function hintsForItem(s, name){
   return (S.slots[s]?.hints || []).filter(h => h.receiving_player === s && itemName(game, h.item) === name);
 }
 function hintLine(h, who){
-  const it = `<span class="${itemClass(h.item_flags || 0)}">${esc(itemName(slotGame(h.receiving_player), h.item))}</span>`;
+  const it = `<span class="it ${itemClass(h.item_flags || 0)}">${esc(itemName(slotGame(h.receiving_player), h.item))}</span>`;
   const loc = esc(locName(slotGame(h.finding_player), h.location)) + (h.entrance ? ` <span class="sub">(${esc(h.entrance)})</span>` : "");
   const st = h.found ? HINT_STATUS[40] : (HINT_STATUS[h.status] || HINT_STATUS[0]);
-  const lead = who === "recv" ? `<span class="p">${esc(slotAlias(h.receiving_player))}</span> needs ${it} <span class="sub">from</span> ${loc}` :
-    `${it} <span class="sub">is at</span> ${loc} <span class="sub">in</span> <span class="p">${esc(slotAlias(h.finding_player))}</span>'s world`;
+  const lead = who === "recv" ? `${pname(h.receiving_player)} needs ${it} <span class="sub">from</span> ${loc}` :
+    `${it} <span class="sub">is at</span> ${loc} <span class="sub">in</span> ${pname(h.finding_player)}'s world`;
   return `<li class="${h.found ? "found" : ""}"><span>${lead}</span>${st[0] ? `<span class="hs ${st[1]}">${st[0]}</span>` : ""}</li>`;
 }
 function pointsLine(s){
@@ -503,7 +505,7 @@ function cardHtml(s){
   const P = pluginFor(s); let extra = "";
   if(P && P.card){ try { extra = P.card(context(s)) || ""; } catch(e){ console.error("[tracker] card", e); } }
   return `<button class="card${goal ? " goal" : ""}${s === S.me ? " mine" : ""}" type="button" data-slot="${s}">
-    <div class="ctop"><div class="min0"><div class="name">${esc(slotAlias(s))}${s === S.me ? ' <span class="sub">(you)</span>' : ""}</div><div class="game">${esc(slotGame(s))}</div></div>${pill}</div>
+    <div class="ctop"><div class="min0"><div class="name c${seriesOf(s)}">${esc(slotAlias(s))}${s === S.me ? ' <span class="sub">(you)</span>' : ""}</div><div class="game">${esc(slotGame(s))}</div></div>${pill}</div>
     <div><div class="checks"><b>${c}<span> / ${t}</span></b><span>${p}%</span></div><div class="bar"><i style="width:${p}%"></i></div></div>
     ${extra ? `<div class="cline">${extra}</div>` : `<div class="sub">${sl.items.length} items received</div>`}
     ${waiting ? `<div class="away-note">${waiting} new item${waiting === 1 ? "" : "s"} while away</div>` : ""}
@@ -522,7 +524,7 @@ function readHash(){ const m = /^#slot-(\d+)$/.exec(location.hash); if(m && S.pl
 function drawDetail(){
   const s = S.view, sl = S.slots[s]; if(!sl) return;
   const game = slotGame(s), { c, t } = counts(s), p = t ? Math.floor(c / t * 100) : 0, P = pluginFor(s);
-  $("dName").textContent = slotAlias(s) + (s === S.me ? " (you)" : "");
+  $("dName").textContent = slotAlias(s) + (s === S.me ? " (you)" : ""); $("dName").className = "dname c" + seriesOf(s);
   $("dGame").textContent = game + (sl.status === STATUS.GOAL ? " · Goal complete" : "");
   $("dChecks").innerHTML = `${c}<span> / ${t}</span>`; $("dPct").textContent = p + "%"; $("dBar").style.width = p + "%";
   $("dNotice").hidden = !broken[game];
@@ -572,7 +574,7 @@ function itemsView(s){
     <input id="itemSearch" type="search" placeholder="Search items" value="${esc(S.itemQ)}" aria-label="Search all items" style="max-width:320px">
     <div class="tiles">${every.slice(0, cap).map(n => `<div class="tile${have.has(n) ? "" : " off"}"${ctx.hint(n)}><span>${esc(n)}</span>${have.get(n) > 1 ? `<small>×${have.get(n)}</small>` : ""}</div>`).join("")}</div>
     ${every.length > cap ? `<span class="sub">${every.length - cap} more. Search to narrow it down.</span>` : ""}${!every.length ? '<p class="empty">No item matches.</p>' : ""}</div>`;
-  if(sl.items.length) out += `<div class="group"><h3>Most recent</h3><ul class="hlist">${sl.items.slice(-10).reverse().map(it => `<li><span><span class="${itemClass(it.flags)}">${esc(itemName(game, it.item))}</span> <span class="sub">from ${esc(locName(slotGame(it.player), it.location))} · ${esc(slotAlias(it.player))}</span></span></li>`).join("")}</ul></div>`;
+  if(sl.items.length) out += `<div class="group"><h3>Most recent</h3><ul class="hlist">${sl.items.slice(-10).reverse().map(it => `<li><span><span class="it ${itemClass(it.flags)}">${esc(itemName(game, it.item))}</span> <span class="sub">from ${esc(locName(slotGame(it.player), it.location))} · ${esc(slotAlias(it.player))}</span></span></li>`).join("")}</ul></div>`;
   return out;
 }
 
@@ -718,8 +720,8 @@ function awaySpan(s){
 function histRow(s, i){
   const sl = S.slots[s], it = sl.items[i], t = sl.times[i];
   const src = it.location < 0 || !it.player ? (it.location === -2 ? "starting inventory" : "given by the server")
-    : it.player === s ? `found it · ${esc(locName(slotGame(s), it.location))}` : `from <span class="p">${esc(slotAlias(it.player))}</span> · ${esc(locName(slotGame(it.player), it.location))}`;
-  return `<li><time>${t != null ? clock(t) : ""}</time><span><span class="${itemClass(it.flags)}">${esc(itemName(slotGame(s), it.item))}</span> <span class="sub">${src}</span></span></li>`;
+    : it.player === s ? `found it · ${esc(locName(slotGame(s), it.location))}` : `from ${pname(it.player)} · ${esc(locName(slotGame(it.player), it.location))}`;
+  return `<li><time>${t != null ? clock(t) : ""}</time><span><span class="it ${itemClass(it.flags)}">${esc(itemName(slotGame(s), it.item))}</span> <span class="sub">${src}</span></span></li>`;
 }
 function historyView(s){
   const sl = S.slots[s], who = esc(slotAlias(s)), ss = sl.sessions || [], last = ss[ss.length - 1];

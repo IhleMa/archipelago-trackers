@@ -16,11 +16,11 @@ Standard library only. Environment:
   RELAY_HISTORY  file that keeps when each item arrived and when each game was online
                  (default: relay-history.json next to RELAY_STATE)
 """
-import asyncio, base64, collections, email.utils, gzip, hashlib, hmac, json, os, queue, secrets, struct
+import asyncio, base64, collections, email.utils, gzip, hashlib, hmac, json, os, queue, secrets, signal, struct
 import sys, threading, time, urllib.parse, uuid, zlib
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 
-VERSION = "1.3.0"
+VERSION = "1.4.0"
 PORT = int(os.environ.get("TRACKER_PORT") or 0)
 AP_HOST = "127.0.0.1"
 AP_PORT = int(os.environ.get("AP_PORT") or 38281)
@@ -740,6 +740,11 @@ def main():
     except OSError as e:
         sys.exit(f"could not listen on port {PORT}: {e}")
     log(f"tracker on port {PORT}, following the Archipelago server on port {AP_PORT}")
+
+    def stop(*_):   # stopped for an update or shutdown: keep the history first
+        save_history()
+        os._exit(0)
+    signal.signal(signal.SIGTERM, stop)
     saved = load_state()
     if saved:
         def first():
