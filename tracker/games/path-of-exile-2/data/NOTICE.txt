@@ -1,0 +1,7 @@
+data/poe2.json is generated from the PathOfExile2 Archipelago world (https://github.com/IhleMa/poe2-apworld,
+world version 0.5.0, game data from the repoe-fork/poe2 export): skill, spirit, utility and meta gems with
+their tiers and weapon types, support gem lineages, classes and ascendancies, and which act each check is in.
+
+data/icons.json holds the equipment silhouettes, drawn for this tracker. No Path of Exile 2 artwork is used.
+
+Path of Exile 2 is a trademark of Grinding Gear Games. This tracker isn't affiliated with or endorsed by them.

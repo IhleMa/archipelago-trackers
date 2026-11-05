@@ -7,6 +7,7 @@ Games with their own tracker get a custom view. Every other game gets the generi
 | Game | Folder |
 | --- | --- |
 | Path of Exile | `tracker/games/path-of-exile` |
+| Path of Exile 2 | `tracker/games/path-of-exile-2` |
 | Minecraft | `tracker/games/minecraft` |
 | Baldur's Gate 3 | `tracker/games/baldurs-gate-3` |
 | Satisfactory | `tracker/games/satisfactory` |
