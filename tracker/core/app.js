@@ -5,7 +5,7 @@
    games/<folder>/ (see games/README.md). */
 "use strict";
 (() => {
-const VERSION = "1.4.1";
+const VERSION = "1.4.2";
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const store = {
@@ -505,10 +505,10 @@ function cardHtml(s){
   const P = pluginFor(s); let extra = "";
   if(P && P.card){ try { extra = P.card(context(s)) || ""; } catch(e){ console.error("[tracker] card", e); } }
   return `<button class="card${goal ? " goal" : ""}${s === S.me ? " mine" : ""}" type="button" data-slot="${s}">
-    <div class="ctop"><div class="min0"><div class="name c${seriesOf(s)}">${esc(slotAlias(s))}${s === S.me ? ' <span class="sub">(you)</span>' : ""}</div><div class="game">${esc(slotGame(s))}</div></div>${pill}</div>
+    <div class="ctop"><div class="min0"><div class="name c${seriesOf(s)}" title="${esc(slotAlias(s))}">${esc(slotAlias(s))}${s === S.me ? ' <span class="sub">(you)</span>' : ""}</div><div class="game" title="${esc(slotGame(s))}">${esc(slotGame(s))}</div></div>${pill}</div>
     <div><div class="checks"><b>${c}<span> / ${t}</span></b><span>${p}%</span></div><div class="bar"><i style="width:${p}%"></i></div></div>
-    ${extra ? `<div class="cline">${extra}</div>` : `<div class="sub">${sl.items.length} items received</div>`}
-    ${waiting ? `<div class="away-note">${waiting} new item${waiting === 1 ? "" : "s"} while away</div>` : ""}
+    <div class="cline"${extra ? ` title="${esc(extra.replace(/<[^>]*>/g, ""))}"` : ""}>${extra || `<span class="sub">${sl.items.length} items received</span>`}</div>
+    <div class="away-note${waiting ? "" : " none"}"${waiting ? "" : ' aria-hidden="true"'}>${waiting ? `${waiting} new item${waiting === 1 ? "" : "s"} while away` : "&nbsp;"}</div>
   </button>`;
 }
 function renderFeed(){
