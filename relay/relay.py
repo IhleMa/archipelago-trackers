@@ -21,7 +21,7 @@ import asyncio, base64, collections, email.utils, gzip, hashlib, hmac, json, os,
 import sys, threading, time, urllib.parse, uuid, zlib
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 
-VERSION = "1.5.0"
+VERSION = "1.6.0"
 PORT = int(os.environ.get("TRACKER_PORT") or 0)
 AP_HOST = "127.0.0.1"
 AP_PORT = int(os.environ.get("AP_PORT") or 38281)
@@ -361,7 +361,8 @@ class Logic:
                 if not st or not st.get("connected"):
                     continue
                 req = {"slot": slot, "game": info.get("game"), "name": info.get("name"),
-                       "slot_data": st["connected"].get("slot_data") or {}, "items": [i["item"] for i in st["items"]]}
+                       "slot_data": st["connected"].get("slot_data") or {}, "items": [i["item"] for i in st["items"]],
+                       "locations": sorted(set(st.get("missing") or ()) | set(st.get("checked") or ()))}
             try:
                 self.proc.stdin.write(json.dumps(req, separators=(",", ":")) + "\n")
                 res = json.loads(self.proc.stdout.readline())
@@ -381,6 +382,13 @@ class Logic:
                 if not self.spawn():
                     return
                 self.q.put(slot)
+                continue
+            if res.get("unsupported"):     # the world can't be rebuilt exactly for this seed: tell the page why
+                data = {"note": res["unsupported"]}
+                with lock:
+                    if R.slots.get(slot) is st:
+                        st["logic"] = data
+                broadcast("logic", dict(data, slot=slot))
                 continue
             if res.get("error"):
                 self.fails += 1

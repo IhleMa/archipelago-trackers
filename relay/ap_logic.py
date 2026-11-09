@@ -21,7 +21,7 @@ import hashlib, importlib, json, logging, os, shutil, subprocess, sys, tarfile, 
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 AP = os.environ.get("AP_SOURCE") or os.path.join(HERE, "ap")
-GAMES = {"Stardew Valley", "Borderlands 2", "Spyro 2"}
+GAMES = {"Stardew Valley", "Borderlands 2", "Spyro 2", "Ocarina of Time"}
 EXTERNAL = {
     "Borderlands 2": {"repo": "EdricY/Bouncy-Loot-God", "path": "worlds/borderlands2", "folder": "borderlands2",
                       "version": lambda sd: str(sd.get("version") or "")},
@@ -40,9 +40,48 @@ def _spyro_after_early(w, sd):
     w.chosen_gem_locations = [names[i] for i in sd.get("gemsanity_ids") or [] if i in names]
 
 
-# Worlds whose Universal Tracker support doesn't restore everything by itself: options to apply from slot data,
-# and a fix-up after generate_early.
-ADAPT = {"Spyro 2": {"options": _spyro_options, "after_early": _spyro_after_early}}
+def _oot_options(sd, locations=()):
+    from worlds.oot import OOTWorld
+    from worlds.oot.Location import location_name_to_id
+    names = set(OOTWorld.options_dataclass.type_hints)
+    opts = {k: v for k, v in sd.items() if k in names}
+    if str(opts.get("mq_dungeons_mode")) in ("count", "3") and locations:
+        # which dungeons are Master Quest was rolled at generation: read it off the slot's own locations
+        by_id = {v: k for k, v in location_name_to_id.items()}
+        loc_names = [by_id.get(i, "") for i in locations]
+        dungeons = ["Deku Tree", "Dodongos Cavern", "Jabu Jabus Belly", "Forest Temple", "Fire Temple", "Water Temple", "Shadow Temple",
+                    "Spirit Temple", "Bottom of the Well", "Ice Cavern", "Gerudo Training Ground", "Ganons Castle"]
+        opts["mq_dungeons_mode"] = "specific"
+        opts["mq_dungeons_list"] = [d for d in dungeons if any(n.startswith(d + " MQ ") for n in loc_names)]
+    trials = opts.get("trials")
+    if isinstance(trials, int) and 0 < trials < 6:
+        opts["trials"] = 6    # which trials are on was rolled at generation; assume all, so nothing shows ready too early
+    return opts
+
+
+def _oot_unsupported(sd):
+    """Settings whose result the world rolls itself and slot data doesn't record."""
+    off = lambda v: str(v).lower() in ("off", "false", "0", "none", "", "simple") if v is not None else True
+    why = []
+    for k, label in (("shuffle_interior_entrances", "interior entrances"), ("shuffle_grotto_entrances", "grotto entrances"),
+                     ("shuffle_dungeon_entrances", "dungeon entrances"), ("shuffle_overworld_entrances", "overworld entrances"),
+                     ("shuffle_bosses", "boss rooms"), ("owl_drops", "owl drops"), ("warp_songs", "warp songs"), ("spawn_positions", "spawn points")):
+        v = sd.get(k)
+        if v not in (None, False, 0) and not (isinstance(v, (list, tuple)) and not v) and str(v).lower() not in ("off", "false", "0", "none", "[]", "set()"):
+            why.append(label)
+    for k, label in (("dungeon_shortcuts", "dungeon shortcuts"), ("key_rings", "key rings")):
+        if str(sd.get(k, "")).lower() in ("random_dungeons", "random"):
+            why.append(label)
+    if why:
+        return ("This seed shuffles " + ", ".join(why) + ". The world rolls those itself and the server isn't told the result, "
+                "so there's no exact \"ready now\" for it.")
+    return None
+
+
+# Worlds whose Universal Tracker support doesn't restore everything by itself (or that have none): options to apply
+# from slot data, and a fix-up after generate_early.
+ADAPT = {"Spyro 2": {"options": _spyro_options, "after_early": _spyro_after_early},
+         "Ocarina of Time": {"options": _oot_options, "unsupported": _oot_unsupported}}
 
 warnings.filterwarnings("ignore")
 os.environ.setdefault("SKIP_REQUIREMENTS_UPDATE", "1")
@@ -60,14 +99,15 @@ STEPS = ("generate_early", "create_regions", "create_items", "set_rules", "conne
 worlds = {}     # slot -> (key, multiworld, world)
 
 
-def build(game, name, slot_data):
+def build(game, name, slot_data, locations=()):
     wt = AutoWorldRegister.world_types[game]
     mw = MultiWorld(1)
     mw.game = {1: game}
     mw.player_name = {1: name or "Player"}
     mw.set_seed(0)
     # defaults first, then the world reads its options and its seed back out of slot data
-    given = ADAPT.get(game, {}).get("options", lambda sd: {})(slot_data)
+    opt = ADAPT.get(game, {}).get("options")
+    given = (opt(slot_data, locations) if opt and opt.__code__.co_argcount > 1 else opt(slot_data)) if opt else {}
     args = Namespace(**{k: {1: v.from_any(given[k] if k in given else v.default)} for k, v in wt.options_dataclass.type_hints.items()})
     probe = MultiWorld(1); probe.game = {1: game}; probe.player_name = dict(mw.player_name); probe.set_seed(0)
     probe.set_options(args)
@@ -134,10 +174,13 @@ def solve(req):
         return {"slot": slot, "error": f"no logic for {game}"}
     if game in EXTERNAL and fetch_world(game, req["slot_data"]):
         return {"slot": slot, "restart": True}
+    why = ADAPT.get(game, {}).get("unsupported", lambda sd: None)(req["slot_data"])
+    if why:
+        return {"slot": slot, "unsupported": why}
     key = hashlib.sha1(json.dumps([game, req.get("name"), req["slot_data"]], sort_keys=True).encode()).hexdigest()
     if slot not in worlds or worlds[slot][0] != key:
         t = time.time()
-        mw, w = build(game, req.get("name"), req["slot_data"])
+        mw, w = build(game, req.get("name"), req["slot_data"], req.get("locations") or ())
         worlds[slot] = (key, mw, w)
         print(f"ap_logic: rebuilt {game} for slot {slot} in {time.time() - t:.1f}s", file=sys.stderr)
     _, mw, w = worlds[slot]

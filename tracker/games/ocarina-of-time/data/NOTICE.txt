@@ -1,0 +1,9 @@
+data/oot.json is generated from Archipelago's Ocarina of Time world (worlds/oot in Archipelago 0.6.8, built on the
+OoT Randomizer; MIT licence): the area and kind of every check. Which checks are in logic is decided by the world
+itself, rebuilt on the server from the slot's own options (relay/ap_logic.py), not by this tracker. Seeds that shuffle
+entrances, spawns or warp songs, or roll dungeon shortcuts or key rings at random, can't be rebuilt that way, and the
+tracker says so.
+
+data/icons.json holds icons drawn for this tracker. No Zelda artwork, logos, symbols or characters are used.
+
+The Legend of Zelda is a trademark of Nintendo. This tracker isn't affiliated with or endorsed by Nintendo.

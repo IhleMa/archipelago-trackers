@@ -5,7 +5,7 @@
    games/<folder>/ (see games/README.md). */
 "use strict";
 (() => {
-const VERSION = "1.5.0";
+const VERSION = "1.6.0";
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const store = {
@@ -322,7 +322,7 @@ function openStream(){
   on("pkt", ({ slot, m }) => { const c = conns.get(slot); if(c) c.handle(m); });
   on("state", ({ slot, conn }) => { const c = conns.get(slot); if(c) c.setState(conn); });
   on("feed", m => onPrint(m));
-  on("logic", x => { const sl = ensureSlot(x.slot); sl.logic = new Set(x.logic); sl.logicGoal = x.goal; render(); });
+  on("logic", x => { const sl = ensureSlot(x.slot); sl.logic = x.note ? null : new Set(x.logic); sl.logicGoal = x.note ? null : x.goal; sl.logicNote = x.note || null; render(); });
   on("presence", p => { const sl = ensureSlot(p.slot); sl.online = p.online; sl.sessions = p.sessions || []; render(); });
   on("reset", () => { toast("The server started a new seed. Reloading the tracker…"); setTimeout(() => relayStart(), 1500); });
   es.onerror = () => {
@@ -348,7 +348,7 @@ function applySnap(sn){
     c.handle({ cmd:"ReceivedItems", index:0, items:x.items || [], times:x.times });
     const sl = ensureSlot(slot); if(x.online !== undefined) sl.online = x.online; if(x.sessions) sl.sessions = x.sessions;
     if(x.progress) sl.prog = x.progress.map(p => p.slice());
-    if(x.logic){ sl.logic = new Set(x.logic.logic); sl.logicGoal = x.logic.goal; }
+    if(x.logic){ sl.logic = x.logic.note ? null : new Set(x.logic.logic); sl.logicGoal = x.logic.note ? null : x.logic.goal; sl.logicNote = x.logic.note || null; }
     storeKey(`_read_client_status_${S.team}_${slot}`, x.status);
     storeKey(`_read_hints_${S.team}_${slot}`, x.hints);
     c.setState(x.conn || "connected");
@@ -472,6 +472,8 @@ function context(s){
     url:path => (plugins[game]?.base || "") + path,
     /** Exact logic from the server (only for games the relay can rebuild): a Set of location ids in logic now, else null. */
     inLogic:sl.logic, logicGoal:sl.logicGoal,
+    /** Why there is no exact logic for this slot even though the server runs it (a setting it can't rebuild), else null. */
+    logicNote:sl.logicNote || null,
     esc
   };
 }
