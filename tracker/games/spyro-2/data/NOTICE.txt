@@ -1,0 +1,8 @@
+data/s2.json is generated from the Spyro 2 world in S2AP (https://github.com/Uroogla/S2AP, apworld/spyro2, by Uroogla, Garmo,
+PhoenixAki and Sonofkrom): the homeworlds and their levels, and the kind of every check. Which checks are in logic is
+decided by the world itself, rebuilt on the server from the slot's own options, key-locked levels and gemsanity picks
+(relay/ap_logic.py downloads the world at the version the seed was made with), not by this tracker.
+
+data/icons.json holds icons drawn for this tracker. No Spyro artwork, logos or characters are used.
+
+Spyro the Dragon is a trademark of Activision. This tracker isn't affiliated with or endorsed by Activision or the game's makers.

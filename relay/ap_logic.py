@@ -10,7 +10,7 @@ in JSON lines on stdin/stdout:
 
 It needs Archipelago's source next to it (relay/ap: the core modules and the worlds it supports; the egg's
 installer fetches the files that match the server's Archipelago version) and a few pure-Python packages
-(pyyaml, schema, pathspec, typing_extensions, bsdiff4). Only games listed in GAMES are rebuilt: their worlds
+(pyyaml, schema, pathspec, typing_extensions, bsdiff4, orjson). Only games listed in GAMES are rebuilt: their worlds
 take every option and their random seed from slot data, so the rebuilt world is the one that was generated.
 
 Worlds that aren't part of Archipelago (EXTERNAL) are downloaded from their own repository the first time a slot
@@ -21,11 +21,28 @@ import hashlib, importlib, json, logging, os, shutil, subprocess, sys, tarfile, 
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 AP = os.environ.get("AP_SOURCE") or os.path.join(HERE, "ap")
-GAMES = {"Stardew Valley", "Borderlands 2"}
+GAMES = {"Stardew Valley", "Borderlands 2", "Spyro 2"}
 EXTERNAL = {
     "Borderlands 2": {"repo": "EdricY/Bouncy-Loot-God", "path": "worlds/borderlands2", "folder": "borderlands2",
                       "version": lambda sd: str(sd.get("version") or "")},
+    "Spyro 2": {"repo": "Uroogla/S2AP", "path": "apworld/spyro2", "folder": "spyro2",
+                "version": lambda sd: str(sd.get("apworldVersion") or "")},
 }
+
+
+def _spyro_options(sd):
+    return dict(sd.get("options") or {})
+
+
+def _spyro_after_early(w, sd):
+    # the seed's own gemsanity picks (the world would otherwise pick its own at random)
+    names = {v: k for k, v in w.location_name_to_id.items()}
+    w.chosen_gem_locations = [names[i] for i in sd.get("gemsanity_ids") or [] if i in names]
+
+
+# Worlds whose Universal Tracker support doesn't restore everything by itself: options to apply from slot data,
+# and a fix-up after generate_early.
+ADAPT = {"Spyro 2": {"options": _spyro_options, "after_early": _spyro_after_early}}
 
 warnings.filterwarnings("ignore")
 os.environ.setdefault("SKIP_REQUIREMENTS_UPDATE", "1")
@@ -50,7 +67,8 @@ def build(game, name, slot_data):
     mw.player_name = {1: name or "Player"}
     mw.set_seed(0)
     # defaults first, then the world reads its options and its seed back out of slot data
-    args = Namespace(**{k: {1: v.from_any(v.default)} for k, v in wt.options_dataclass.type_hints.items()})
+    given = ADAPT.get(game, {}).get("options", lambda sd: {})(slot_data)
+    args = Namespace(**{k: {1: v.from_any(given[k] if k in given else v.default)} for k, v in wt.options_dataclass.type_hints.items()})
     probe = MultiWorld(1); probe.game = {1: game}; probe.player_name = dict(mw.player_name); probe.set_seed(0)
     probe.set_options(args)
     seed = probe.worlds[1].interpret_slot_data(slot_data)
@@ -61,6 +79,8 @@ def build(game, name, slot_data):
     mw.state = CollectionState(mw)
     for step in STEPS:
         call_all(mw, step)
+        if step == "generate_early" and "after_early" in ADAPT.get(game, {}):
+            ADAPT[game]["after_early"](w, slot_data)
     mw.precollected_items[1] = []      # the server sends starting items like any other, so count them once
     return mw, w
 

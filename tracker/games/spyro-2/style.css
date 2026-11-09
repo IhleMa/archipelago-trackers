@@ -1,0 +1,129 @@
+/* Spyro 2: Avalar at three times of year. Each homeworld is a sky in its season (summer green-blue, autumn amber,
+   winter lavender ice) and every level is a portal ring that fills as you clear it, glowing when something there
+   is ready now and turning to stone while it's locked. Dragon purple and horn gold; the five gem colours only for
+   gems. Lilita One for titles, Baloo 2 for reading. Same look in both page themes. Scoped to .sp */
+@import url("https://fonts.googleapis.com/css2?family=Lilita+One&family=Baloo+2:wght@500;600;700;800&display=swap");
+.sp{--purple:#7b45d1;--purple2:#5a2fa8;--deep:#2a1452;--gold:#f6c344;--gold2:#ffe39a;--ink:#2a1452;--paper:#fbf7ff;--mute:#6f5f8e;
+  --go:#4fd17a;--go2:#1f8a48;--ring:var(--gold);--head:"Lilita One","Trebuchet MS",sans-serif;--body:"Baloo 2","Segoe UI",sans-serif;
+  background:radial-gradient(ellipse 70% 50% at 20% 0%,rgba(255,227,154,.35),transparent 60%),linear-gradient(180deg,#8f5ce0 0%,#6a3bc4 40%,#4b2593 100%);
+  color:var(--ink);font-family:var(--body);font-weight:500;font-size:16px;line-height:1.35;padding:20px;display:flex;flex-direction:column;gap:18px;border-radius:22px}
+.sp h3{font-family:var(--head);font-weight:400;font-size:26px;line-height:1.05;margin:0;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.sp h3 small{font-family:var(--body);font-weight:600;font-size:14px;color:var(--mute)}
+.sp code{font-size:13px;background:rgba(0,0,0,.1);padding:0 5px;border-radius:4px}
+.sp [data-hint]{cursor:pointer}
+.sp [data-hint]:focus-visible,.sp a:focus-visible{outline:3px solid var(--gold);outline-offset:3px;border-radius:10px}
+.sp-i{flex:none;display:block}
+.sp-i .s{fill:#cbbde6;stroke:var(--deep);stroke-width:2.4;stroke-linejoin:round}
+.sp-i .d{fill:none;stroke:var(--deep);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;opacity:.75}
+.sp-panel{background:var(--paper);border-radius:20px;padding:16px 18px 18px;box-shadow:0 6px 0 rgba(42,20,82,.35)}
+.sp-panel>h3{margin-bottom:12px}
+
+/* hero */
+.sp-hero{display:grid;grid-template-columns:minmax(0,1.5fr) repeat(2,minmax(0,1fr));gap:16px;align-items:center;padding:18px 22px;border-radius:22px;
+  background:linear-gradient(135deg,var(--deep),#3c1f74);color:#fff;box-shadow:inset 0 0 0 3px rgba(246,195,68,.55),0 6px 0 rgba(20,8,44,.5)}
+.sp-hero small{font-weight:800;color:var(--gold)}
+.sp-hero h2{font-family:var(--head);font-weight:400;font-size:clamp(30px,4.6vw,44px);line-height:1;margin:2px 0 4px;color:var(--gold2);text-shadow:0 3px 0 #b8801c}
+.sp-hero p{margin:0;color:#d8c9f5;font-weight:600}
+.sp-hero.go p{color:#9dffbf}
+.sp-hero.done h2{color:#9dffbf;text-shadow:0 3px 0 var(--go2)}
+.sp-big{padding-left:16px;border-left:2px solid rgba(255,255,255,.18)}
+.sp-big b{display:block;font-family:var(--head);font-weight:400;font-size:46px;line-height:.95}
+.sp-big.go b{color:var(--go)}
+.sp-big b em{font-style:normal;font-size:22px;color:#b9a6e6}
+.sp-big span{font-weight:700;color:#d8c9f5}
+.sp-warn{grid-column:1/-1;font-size:14px}
+
+/* collectibles */
+.sp-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.sp-stat{display:grid;grid-template-columns:auto 1fr;column-gap:12px;align-items:center;padding:12px 14px;background:var(--paper);border-radius:18px;box-shadow:0 5px 0 rgba(42,20,82,.35)}
+.sp-stat .sp-i{grid-row:1/span 3}
+.sp-stat b{font-family:var(--head);font-weight:400;font-size:32px;line-height:1}
+.sp-stat b em{font-style:normal;font-size:17px;color:var(--mute)}
+.sp-stat span{font-weight:700;font-size:14.5px}
+.sp-stat small{font-size:12.5px;color:var(--mute)}
+.sp-stat.talisman .s{fill:var(--gold)}.sp-stat.orb .s{fill:#c7a6ff}.sp-stat.skill .s{fill:#7ee08f}.sp-stat.token .s{fill:#ff6f86}.sp-stat.gem .s{fill:#ff8ad8}
+.sp-stat[data-hint]:hover{background:#fff}
+
+/* moves */
+.sp-moves{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:10px}
+.sp-move{display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 6px 8px;border-radius:16px;background:#efe8fb;border:2px dashed #cdbdee;text-align:center}
+.sp-move b{font-weight:700;font-size:14.5px;line-height:1.1}
+.sp-move span{font-size:13px;color:var(--mute);font-weight:600}
+.sp-move.on{background:#fff6dc;border:2px solid var(--gold)}
+.sp-move.on .s{fill:var(--gold)}
+.sp-move.vanilla{border-style:solid;background:#f6f2fd}
+.sp-move.vanilla .s{fill:#dccdf6}
+.sp-move[data-hint]:hover{background:#fff}
+
+/* homeworld skies with portals */
+.sp-world{--sky1:#9fe0ff;--sky2:#d8f6c6;--ground:#4fae5a;--ring:#ffd34d;position:relative;border-radius:24px;padding:16px 18px 18px;overflow:hidden;
+  background:linear-gradient(180deg,var(--sky1) 0%,var(--sky2) calc(100% - 16px),var(--ground) calc(100% - 16px));padding-bottom:30px;box-shadow:0 6px 0 rgba(42,20,82,.35)}
+.sp-world.autumn{--sky1:#ffcf8a;--sky2:#ffe7c2;--ground:#c9772f;--ring:#ffb347}
+.sp-world.winter{--sky1:#c9c6ff;--sky2:#eef1ff;--ground:#9fb6e8;--ring:#bfe6ff}
+.sp-world.flat{background:linear-gradient(180deg,var(--sky1),var(--sky2))}
+.sp-world>header{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.sp-world>header h3{font-size:28px;color:var(--deep);text-shadow:0 2px 0 rgba(255,255,255,.7)}
+.sp-world>header span{font-weight:700;color:#4d3b72}
+.sp-world>header span b{color:var(--go2)}
+.sp-world.summer>header .s{fill:#5fd068}.sp-world.autumn>header .s{fill:#ff8a3d}.sp-world.winter>header .s{fill:#fff}
+.sp-portals{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:12px 8px}
+.sp-portal{display:flex;flex-direction:column;align-items:center;text-align:center;gap:2px}
+.sp-portal>a{position:relative;display:grid;place-items:center;width:84px;height:84px;text-decoration:none;color:inherit}
+.sp-ring{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
+.sp-ring circle{fill:none;stroke-width:9}
+.sp-ring .bg{stroke:rgba(42,20,82,.22);fill:rgba(42,20,82,.78)}
+.sp-ring .p{stroke:var(--ring);stroke-linecap:round}
+.sp-core{position:relative;display:grid;place-items:center;width:52px;height:52px;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#b892ff,#5a2fa8 70%);box-shadow:inset 0 0 0 2px rgba(255,255,255,.35)}
+.sp-core b{font-family:var(--head);font-weight:400;font-size:22px;color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.35)}
+.sp-core .s{fill:#fff}
+.sp-portal strong{font-weight:800;font-size:14px;line-height:1.1;color:var(--deep);text-shadow:0 0 6px rgba(255,255,255,.9),0 1px 0 #fff;max-width:120px}
+.sp-portal small{font-weight:700;font-size:12.5px;color:#4d3b72;background:rgba(255,255,255,.7);border-radius:10px;padding:0 8px}
+.sp-portal.go .sp-core{background:radial-gradient(circle at 35% 30%,#a8ffc6,#1f8a48 72%);box-shadow:0 0 0 4px rgba(79,209,122,.35),0 0 18px 4px rgba(79,209,122,.65)}
+.sp-portal.go small{background:var(--go2);color:#fff}
+.sp-portal.full .sp-ring .bg{fill:#b8801c}
+.sp-portal.full .sp-core{background:radial-gradient(circle at 35% 30%,#fff3c4,#e2a325 72%)}
+.sp-portal.full .sp-core .s{fill:#fff}
+.sp-portal.shut .sp-ring .bg{fill:#8a8597;stroke:#6e6a7c}
+.sp-portal.shut .sp-core{background:radial-gradient(circle at 35% 30%,#c9c4d6,#77718a 72%)}
+.sp-portal.shut strong{color:#4a4460}
+.sp-portal.home .sp-core{width:58px;height:58px}
+@media (prefers-reduced-motion:no-preference){.sp-portal.go .sp-core{animation:sp-glow 2.4s ease-in-out infinite}}
+@keyframes sp-glow{50%{box-shadow:0 0 0 6px rgba(79,209,122,.25),0 0 26px 8px rgba(79,209,122,.75)}}
+
+/* levels */
+.sp-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px;align-items:start}
+.sp-card{background:var(--paper);border-radius:18px;padding:12px 14px 14px;scroll-margin-top:90px;box-shadow:0 4px 0 rgba(42,20,82,.25)}
+.sp-card>header{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.sp-card h4{flex:1;margin:0;font-family:var(--head);font-weight:400;font-size:20px}
+.sp-card>header span{font-weight:700;font-size:14px;color:var(--mute)}
+.sp-card>header b{color:var(--go2)}
+.sp-card>header .s{fill:#b892ff}
+.sp-card.go{box-shadow:0 0 0 3px var(--go),0 4px 0 rgba(42,20,82,.25)}
+.sp-card.shut{background:#ece8f2}
+.sp-card.shut>header .s{fill:#9b95ad}
+.sp-need{display:flex;align-items:center;gap:6px;margin:0 0 8px;padding:6px 10px;border-radius:12px;background:#fff1c7;font-weight:600}
+.sp-need .s{fill:var(--gold)}
+.sp-groups{display:flex;flex-wrap:wrap;gap:5px}
+.sp-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 10px 3px 5px;border-radius:14px;font-size:13.5px;font-weight:600;background:#efe8fb;color:#5d4d7c}
+.sp-chip.go{background:#d7f8e2;color:#145e31;box-shadow:inset 0 0 0 2px var(--go);font-weight:800}
+.sp-chip.go .s{fill:var(--go)}
+.sp-chip.done{background:#fff1c7;color:#7a5a12}
+.sp-chip.done .s{fill:var(--gold)}
+.sp-gemrow{flex-basis:100%;display:grid;grid-template-columns:auto auto 1fr auto;gap:8px;align-items:center;padding:4px 2px}
+.sp-gemrow .s{fill:#ff8ad8}
+.sp-gemrow small{font-weight:700;color:var(--mute)}
+.sp-meter{display:flex;height:10px;border-radius:6px;background:#e6ddf6;overflow:hidden}
+.sp-meter i{display:block;height:100%;background:var(--gold)}
+.sp-meter i.r{background:var(--go)}
+
+@media (max-width:640px){
+  .sp{padding:12px;gap:14px;border-radius:18px;font-size:15px}
+  .sp-hero{grid-template-columns:1fr 1fr;padding:16px}
+  .sp-hero>div:first-child{grid-column:1/-1}
+  .sp-big:nth-of-type(2){padding-left:0;border-left:0}
+  .sp-portals{grid-template-columns:repeat(3,1fr)}
+  .sp-portal>a{width:74px;height:74px}
+  .sp-core{width:46px;height:46px}
+  .sp-cards{grid-template-columns:1fr}
+}
