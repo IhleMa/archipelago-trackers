@@ -1,0 +1,8 @@
+data/aoe.json and data/logic.json are generated from the Ageipelago world (worlds/age2de in https://github.com/dmwever/Archipelago,
+MIT licence, by dmwever): the scenarios, their objectives and items, the buildings with their age and cost, and the world's
+access rules. The rules are the world's own rule-builder rules after Archipelago resolves them, one rule graph per mix of
+campaigns, and this tracker evaluates them the way Archipelago does. They were checked against real generation on 288 states.
+
+data/icons.json holds icons drawn for this tracker. No Age of Empires artwork, logos or characters are used.
+
+Age of Empires is a trademark of Microsoft. This tracker isn't affiliated with or endorsed by Microsoft or the game's makers.

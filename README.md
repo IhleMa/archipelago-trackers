@@ -14,6 +14,7 @@ Games with their own tracker get a custom view. Every other game gets the generi
 | StarCraft II | `tracker/games/starcraft-2` |
 | Animal Crossing | `tracker/games/animal-crossing` |
 | Stardew Valley | `tracker/games/stardew-valley` (exact logic from Archipelago, see below) |
+| Age of Empires II: DE (Ageipelago) | `tracker/games/age-of-empires-2` |
 | Elden Ring | `tracker/games/elden-ring` |
 | Old School RuneScape | `tracker/games/old-school-runescape` |
 | Pokémon Platinum | `tracker/games/pokemon-platinum` |
