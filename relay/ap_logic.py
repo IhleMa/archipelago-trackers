@@ -23,7 +23,7 @@ import hashlib, importlib, json, traceback, logging, os, shutil, subprocess, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 AP = os.environ.get("AP_SOURCE") or os.path.join(HERE, "ap")
-GAMES = {"Stardew Valley", "Borderlands 2", "Spyro 2", "Ocarina of Time", "Pokemon Platinum", "Slay the Spire"}
+GAMES = {"Stardew Valley", "Borderlands 2", "Spyro 2", "Ocarina of Time", "Pokemon Platinum", "Slay the Spire", "Slay the Spire II"}
 EXTERNAL = {
     "Borderlands 2": {"repo": "EdricY/Bouncy-Loot-God", "path": "worlds/borderlands2", "folder": "borderlands2",
                       "version": lambda sd: str(sd.get("version") or "")},
@@ -34,7 +34,27 @@ EXTERNAL = {
     # slot data has no world version, only the mod's protocol version: follow the repo's release branch for it
     "Slay the Spire": {"repo": "cjmang/StS-AP-World", "path": "worlds/spire", "folder": "spire",
                        "version": lambda sd: f"mod{sd.get('mod_version', '')}", "refs": ["refs/heads/sts", "refs/heads/main"]},
+    # slot data has the world version, but the repo tags its releases by the mod's version: find the tag that has it
+    "Slay the Spire II": {"repo": "dlueben1/Slay-the-Spire-2-Archipelago", "path": "world/spire2", "folder": "spire2",
+                          "version": lambda sd: str(sd.get("mod_compat_version") or ""),
+                          "refs": lambda want: _tags_with_world_version("dlueben1/Slay-the-Spire-2-Archipelago", "world/spire2/archipelago.json", want)},
 }
+
+
+def _tags_with_world_version(repo, manifest, want, look=30):
+    """Release tags (newest first) whose archipelago.json says world_version == want, then main as a last resort."""
+    found = []
+    try:
+        r = subprocess.run(["curl", "-fsSL", "--max-time", "60", f"https://api.github.com/repos/{repo}/tags?per_page=100"], capture_output=True, text=True)
+        tags = [t["name"] for t in json.loads(r.stdout or "[]")] if r.returncode == 0 else []
+        for tag in tags[:look]:
+            r = subprocess.run(["curl", "-fsSL", "--max-time", "30", f"https://raw.githubusercontent.com/{repo}/{tag}/{manifest}"], capture_output=True, text=True)
+            if r.returncode == 0 and str(json.loads(r.stdout).get("world_version")) == want:
+                found.append(f"refs/tags/{tag}")
+                break
+    except Exception as e:
+        print(f"ap_logic: couldn't look up {repo}'s release tags: {e}", file=sys.stderr)
+    return found + ["refs/heads/main"]
 
 
 def _codeload(repo, ref, path, out):
@@ -224,6 +244,8 @@ def fetch_world(game, slot_data):
         try:
             got = None
             refs = ext.get("refs") or ([f"refs/tags/v{want}", f"refs/tags/{want}"] if want else []) + ["refs/heads/main", "refs/heads/master"]
+            if callable(refs):
+                refs = refs(want)
             out = os.path.join(tmp, "world")
             for ref in refs:
                 if _codeload(ext["repo"], ref, ext["path"], out):

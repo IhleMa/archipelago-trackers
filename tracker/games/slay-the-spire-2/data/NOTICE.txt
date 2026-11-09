@@ -1,0 +1,5 @@
+sts2.json is generated from the Slay the Spire 2 Archipelago world (https://github.com/dlueben1/Slay-the-Spire-2-Archipelago,
+world/spire2): which part of each act every check belongs to, read from the world's regions.
+The icons in tracker.js are drawn for this tracker; no game art is used.
+
+The world itself is under the BSD-3 licence (Copyright 2026 dlueben1, cjmang, Lyxn-M and its other authors); see its repository.
