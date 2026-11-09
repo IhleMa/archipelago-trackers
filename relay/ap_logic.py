@@ -23,7 +23,7 @@ import hashlib, importlib, json, traceback, logging, os, shutil, subprocess, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 AP = os.environ.get("AP_SOURCE") or os.path.join(HERE, "ap")
-GAMES = {"Stardew Valley", "Borderlands 2", "Spyro 2", "Ocarina of Time", "Pokemon Platinum"}
+GAMES = {"Stardew Valley", "Borderlands 2", "Spyro 2", "Ocarina of Time", "Pokemon Platinum", "Slay the Spire"}
 EXTERNAL = {
     "Borderlands 2": {"repo": "EdricY/Bouncy-Loot-God", "path": "worlds/borderlands2", "folder": "borderlands2",
                       "version": lambda sd: str(sd.get("version") or "")},
@@ -31,6 +31,9 @@ EXTERNAL = {
                 "version": lambda sd: str(sd.get("apworldVersion") or "")},
     "Pokemon Platinum": {"repo": "ljtpetersen/platinum_archipelago", "path": "", "folder": "pokemon_platinum",
                          "version": lambda sd: str(sd.get("version") or ""), "prepare": lambda d: _platinum_prepare(d)},
+    # slot data has no world version, only the mod's protocol version: follow the repo's release branch for it
+    "Slay the Spire": {"repo": "cjmang/StS-AP-World", "path": "worlds/spire", "folder": "spire",
+                       "version": lambda sd: f"mod{sd.get('mod_version', '')}", "refs": ["refs/heads/sts", "refs/heads/main"]},
 }
 
 
@@ -220,7 +223,7 @@ def fetch_world(game, slot_data):
         tmp = tempfile.mkdtemp(prefix="apworld-")
         try:
             got = None
-            refs = ([f"refs/tags/v{want}", f"refs/tags/{want}"] if want else []) + ["refs/heads/main", "refs/heads/master"]
+            refs = ext.get("refs") or ([f"refs/tags/v{want}", f"refs/tags/{want}"] if want else []) + ["refs/heads/main", "refs/heads/master"]
             out = os.path.join(tmp, "world")
             for ref in refs:
                 if _codeload(ext["repo"], ref, ext["path"], out):

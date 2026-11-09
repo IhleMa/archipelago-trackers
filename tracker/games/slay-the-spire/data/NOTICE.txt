@@ -1,0 +1,5 @@
+sts.json is generated from the Slay the Spire Archipelago world (https://github.com/cjmang/StS-AP-World,
+worlds/spire): which part of each act every check belongs to, read from the world's regions, and its character list.
+The icons in tracker.js are drawn for this tracker; no game art is used.
+
+The world itself is under the MIT licence (Copyright (c) 2017 LLCoolDave and its later authors); see its repository.
