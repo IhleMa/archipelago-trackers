@@ -23,13 +23,59 @@ import hashlib, importlib, json, traceback, logging, os, shutil, subprocess, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 AP = os.environ.get("AP_SOURCE") or os.path.join(HERE, "ap")
-GAMES = {"Stardew Valley", "Borderlands 2", "Spyro 2", "Ocarina of Time"}
+GAMES = {"Stardew Valley", "Borderlands 2", "Spyro 2", "Ocarina of Time", "Pokemon Platinum"}
 EXTERNAL = {
     "Borderlands 2": {"repo": "EdricY/Bouncy-Loot-God", "path": "worlds/borderlands2", "folder": "borderlands2",
                       "version": lambda sd: str(sd.get("version") or "")},
     "Spyro 2": {"repo": "Uroogla/S2AP", "path": "apworld/spyro2", "folder": "spyro2",
                 "version": lambda sd: str(sd.get("apworldVersion") or "")},
+    "Pokemon Platinum": {"repo": "ljtpetersen/platinum_archipelago", "path": "", "folder": "pokemon_platinum",
+                         "version": lambda sd: str(sd.get("version") or ""), "prepare": lambda d: _platinum_prepare(d)},
 }
+
+
+def _codeload(repo, ref, path, out):
+    """Download repo at ref from GitHub and extract its folder `path` ("" for all of it) into out. True if it worked."""
+    tmp = tempfile.mkdtemp(prefix="apsrc-")
+    try:
+        tgz = os.path.join(tmp, "src.tgz")
+        r = subprocess.run(["curl", "-fsSL", "--max-time", "120", "-o", tgz, f"https://codeload.github.com/{repo}/tar.gz/{ref}"], capture_output=True)
+        if r.returncode != 0:
+            return False
+        with tarfile.open(tgz) as tf:
+            members = []
+            for m in tf.getmembers():
+                if "/" not in m.name or m.issym() or m.islnk():
+                    continue
+                rel = m.name.split("/", 1)[1]
+                if path and not rel.startswith(path + "/"):
+                    continue
+                m.name = rel[len(path) + 1:] if path else rel
+                if m.name:
+                    members.append(m)
+            if not members:
+                return False
+            tf.extractall(out, members=members)
+        return True
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+def _platinum_prepare(d):
+    # the world's data tables are generated from its TOML files when the .apworld is built, and it needs the
+    # apnds library next to it: do both, as its Makefile does
+    ver = open(os.path.join(d, "apnds_version.txt")).read().strip()
+    tmp = tempfile.mkdtemp(prefix="apnds-")
+    try:
+        if not _codeload("ljtpetersen/apnds", f"refs/tags/v{ver}", "", tmp):
+            raise RuntimeError(f"couldn't download apnds {ver}")
+        shutil.copytree(os.path.join(tmp, "apnds"), os.path.join(d, "apnds"), dirs_exist_ok=True)
+        open(os.path.join(d, "apnds", "__init__.py"), "a").close()
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+    r = subprocess.run([sys.executable, "data_gen.py"], cwd=d, capture_output=True, text=True)
+    if r.returncode != 0 or not os.path.isfile(os.path.join(d, "data", "__init__.py")):
+        raise RuntimeError("Pokemon Platinum data_gen.py failed: " + (r.stderr or r.stdout)[-400:])
 
 
 def _spyro_options(sd):
@@ -107,7 +153,9 @@ def _oot_unsupported(sd):
 ADAPT = {"Spyro 2": {"options": _spyro_options, "after_early": _spyro_after_early},
          # OoT shuffles which boss holds which medallion or stone, and shop prices, and slot data records neither:
          # rebuild it several times covering those rolls; checks that depend on them come out as "maybe"
-         "Ocarina of Time": {"options": _oot_options, "unsupported": _oot_unsupported, "variant": _oot_variant, "samples": 9}}
+         "Ocarina of Time": {"options": _oot_options, "unsupported": _oot_unsupported, "variant": _oot_variant, "samples": 9},
+         # reads its options and every roll back out of slot data, but only when told this is a tracker's rebuild
+         "Pokemon Platinum": {"fake": True}}
 
 warnings.filterwarnings("ignore")
 os.environ.setdefault("SKIP_REQUIREMENTS_UPDATE", "1")
@@ -131,6 +179,8 @@ def build(game, name, slot_data, locations=(), seed=0):
     mw.game = {1: game}
     mw.player_name = {1: name or "Player"}
     mw.set_seed(seed)
+    if ADAPT.get(game, {}).get("fake"):
+        mw.generation_is_fake = True
     # defaults first, then the world reads its options and its seed back out of slot data
     opt = ADAPT.get(game, {}).get("options")
     given = (opt(slot_data, locations) if opt and opt.__code__.co_argcount > 1 else opt(slot_data)) if opt else {}
@@ -171,22 +221,15 @@ def fetch_world(game, slot_data):
         try:
             got = None
             refs = ([f"refs/tags/v{want}", f"refs/tags/{want}"] if want else []) + ["refs/heads/main", "refs/heads/master"]
+            out = os.path.join(tmp, "world")
             for ref in refs:
-                tgz = os.path.join(tmp, "src.tgz")
-                r = subprocess.run(["curl", "-fsSL", "--max-time", "120", "-o", tgz, f"https://codeload.github.com/{ext['repo']}/tar.gz/{ref}"],
-                                   capture_output=True)
-                if r.returncode == 0:
-                    with tarfile.open(tgz) as tf:
-                        members = [m for m in tf.getmembers() if "/" in m.name and m.name.split("/", 1)[1].startswith(ext["path"] + "/")]
-                        for m in members:
-                            m.name = m.name.split("/", 1)[1][len(ext["path"]) + 1:]
-                        if members:
-                            out = os.path.join(tmp, "world")
-                            tf.extractall(out, members=[m for m in members if m.name and not m.issym() and not m.islnk()])
-                            got = (ref, out)
-                            break
+                if _codeload(ext["repo"], ref, ext["path"], out):
+                    got = (ref, out)
+                    break
             if not got:
                 raise RuntimeError(f"couldn't download the {game} world from {ext['repo']}")
+            if "prepare" in ext:
+                ext["prepare"](out)
             shutil.rmtree(dest, ignore_errors=True)
             shutil.move(got[1], dest)
             with open(os.path.join(dest, ".version"), "w") as f:

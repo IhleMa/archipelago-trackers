@@ -38,7 +38,9 @@ def strip_py(data):
 
 
 def bundle(games):
-    files = ["tracker/index.html", "tracker/games/README.md", "relay/relay.py", "relay/ap_logic.py", "bin/httpd.conf", "bin/update-tracker.sh", "bin/setup-logic.sh"]
+    # exact logic (relay/ap_logic.py, bin/setup-logic.sh) isn't in this offline copy: it has to download Archipelago's
+    # source anyway, and "tracker update" brings both files in
+    files = ["tracker/index.html", "tracker/games/README.md", "relay/relay.py", "bin/httpd.conf", "bin/update-tracker.sh"]
     for top in ["tracker/core", "tracker/cgi-bin"] + [f"tracker/games/{g}" for g in games]:
         for dirpath, dirnames, filenames in os.walk(os.path.join(ROOT, top)):
             dirnames.sort()

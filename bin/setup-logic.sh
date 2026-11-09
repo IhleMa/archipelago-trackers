@@ -39,9 +39,9 @@ if [ "$(cat relay/ap/.version 2>/dev/null)" != "${WANT}" ]; then
     fi
 fi
 
-if ! "${PY}" -c "import yaml, schema, pathspec, typing_extensions, bsdiff4, orjson" 2>/dev/null; then
+if ! "${PY}" -c "import yaml, schema, pathspec, typing_extensions, bsdiff4, orjson, pyparsing" 2>/dev/null; then
     "${PY}" -m pip --version >/dev/null 2>&1 || "${PY}" -m ensurepip -q >/dev/null 2>&1
-    "${PY}" -m pip install -q --disable-pip-version-check pyyaml schema pathspec typing_extensions bsdiff4 orjson >/dev/null 2>&1 \
+    "${PY}" -m pip install -q --disable-pip-version-check pyyaml schema pathspec typing_extensions bsdiff4 orjson pyparsing >/dev/null 2>&1 \
         && echo "[tracker] Exact logic: Python packages installed." \
         || echo "[tracker] Couldn't install the Python packages for exact logic."
 fi

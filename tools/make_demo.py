@@ -17,7 +17,7 @@ items that belong to it. The file goes into the game tracker folder whose game.j
 """
 import argparse, glob, json, os, subprocess, sys, tempfile, zipfile
 
-LOGIC_GAMES = {"Stardew Valley", "Borderlands 2", "Spyro 2", "Ocarina of Time"}     # games the relay solves exactly (relay/ap_logic.py): the demo fakes it from spheres
+LOGIC_GAMES = {"Stardew Valley", "Borderlands 2", "Spyro 2", "Ocarina of Time", "Pokemon Platinum"}     # games the relay solves exactly (relay/ap_logic.py): the demo fakes it from spheres
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.getcwd())
 os.environ.setdefault("SKIP_REQUIREMENTS_UPDATE", "1")
