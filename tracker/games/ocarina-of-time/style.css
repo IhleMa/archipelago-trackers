@@ -1,0 +1,115 @@
+/* Ocarina of Time: Hyrule at dusk. Night-teal panels like a pause screen, with a thin gold line and a warm horizon;
+   fairy-light blue means "you can do it now", gold means done. Medallions sit in a ring around the spiritual stones
+   and the songs are notes on a staff. Marcellus for titles, Source Sans 3 for reading. Same look in both page themes.
+   Scoped to .oo */
+@import url("https://fonts.googleapis.com/css2?family=Marcellus&family=Source+Sans+3:wght@400;600;700&display=swap");
+.oo{--night:#0d2230;--panel:rgba(12,34,46,.9);--line:rgba(232,197,106,.45);--gold:#e8c56a;--gold2:#ffe7a6;--text:#e9eef2;--mute:#9fb3c0;--faint:#56707f;
+  --fairy:#8fd8ff;--fairy2:#d4f1ff;--head:"Marcellus",Georgia,serif;--body:"Source Sans 3","Segoe UI",sans-serif;
+  background:radial-gradient(ellipse 120% 60% at 50% 105%,rgba(232,160,106,.45),transparent 60%),
+    radial-gradient(circle at 12% 8%,rgba(143,216,255,.10) 0 2px,transparent 3px) 0 0/90px 70px,
+    radial-gradient(circle at 70% 30%,rgba(255,255,255,.12) 0 1px,transparent 2px) 0 0/60px 50px,
+    linear-gradient(180deg,#081822 0%,#12324a 55%,#3b3550 100%);
+  color:var(--text);font-family:var(--body);font-size:16px;line-height:1.4;padding:20px;display:flex;flex-direction:column;gap:18px;border-radius:14px}
+.oo h3{font-family:var(--head);font-weight:400;font-size:24px;letter-spacing:.02em;margin:0 0 12px;color:var(--gold2)}
+.oo code{font-size:13px;background:rgba(255,255,255,.08);padding:0 5px;border-radius:3px}
+.oo [data-hint]{cursor:pointer}
+.oo [data-hint]:focus-visible{outline:2px solid var(--fairy);outline-offset:3px;border-radius:8px}
+.oo-i{flex:none;display:block}
+.oo-i .s{fill:#3a5466;stroke:#06141c;stroke-width:2.2;stroke-linejoin:round}
+.oo-i .d{fill:none;stroke:#06141c;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;opacity:.8}
+.oo-panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px 18px;box-shadow:inset 0 1px 0 rgba(255,231,166,.12),0 8px 24px rgba(0,0,0,.35)}
+.oo-two{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:18px;align-items:start}
+.oo-bar{display:block;height:6px;border-radius:4px;background:rgba(255,255,255,.1);overflow:hidden}
+.oo-bar i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2))}
+
+/* hero */
+.oo-hero{display:grid;grid-template-columns:minmax(0,1.7fr) repeat(2,minmax(0,1fr));gap:18px;align-items:center;padding:18px 22px;border-radius:14px;
+  background:linear-gradient(135deg,rgba(12,34,46,.95),rgba(30,44,70,.92));border:1px solid var(--line)}
+.oo-goal small{color:var(--gold);font-weight:700;letter-spacing:.04em}
+.oo-goal h2{font-family:var(--head);font-weight:400;font-size:clamp(28px,4vw,40px);line-height:1.05;margin:2px 0 8px;color:var(--gold2)}
+.oo-goal p{margin:4px 0;display:grid;grid-template-columns:1fr auto;column-gap:10px;row-gap:4px;align-items:center;color:var(--text);font-size:15px}
+.oo-goal p b{color:var(--gold2)}
+.oo-goal p .oo-bar{grid-column:1/-1}
+.oo-goal em{font-style:normal;color:var(--mute);font-size:14.5px}
+.oo-hero.go .oo-goal em{color:var(--fairy)}
+.oo-hero.done .oo-goal h2{color:var(--fairy2)}
+.oo-num{padding-left:18px;border-left:1px solid var(--line)}
+.oo-num b{display:block;font-family:var(--head);font-weight:400;font-size:46px;line-height:1}
+.oo-num.go b{color:var(--fairy);text-shadow:0 0 18px rgba(143,216,255,.55)}
+.oo-num b em{font-style:normal;font-size:22px;color:var(--mute)}
+.oo-num span{color:var(--mute);font-weight:600}
+.oo-num small{display:inline-block;margin:6px 0 0 8px;padding:1px 9px;border-radius:12px;border:1px dashed var(--fairy);color:var(--fairy2);font-size:13px;font-weight:600}
+.oo-warn{grid-column:1/-1;margin:0;font-size:14px;color:var(--mute)}
+
+/* quest status: the medallion ring */
+.oo-ring{position:relative;width:260px;height:260px;margin:4px auto 6px}
+.oo-ring::before{content:"";position:absolute;inset:34px;border-radius:50%;border:1px dashed var(--line)}
+.oo-med{position:absolute;left:50%;top:50%;width:54px;height:54px;margin:-27px 0 0 -27px;transform:rotate(var(--a)) translate(98px) rotate(calc(-1 * var(--a)))}
+.oo-med>.oo-i{position:absolute;inset:0}
+.oo-med>i{position:absolute;inset:14px;display:grid;place-items:center}
+.oo-med>i .s{fill:#2a4252;stroke:none}
+.oo-med.on{filter:drop-shadow(0 0 10px color-mix(in srgb,var(--c) 70%,transparent))}
+.oo-med.on>i .s{fill:#fff}
+.oo-stones{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;gap:6px}
+.oo-stones span.on{filter:drop-shadow(0 0 8px rgba(255,255,255,.4))}
+.oo-qrow{display:flex;flex-wrap:wrap;justify-content:center;gap:10px}
+.oo-qrow>span{display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08)}
+.oo-qrow>span b{font-family:var(--head);font-weight:400;font-size:20px}
+.oo-qrow>span small{color:var(--mute)}
+.oo-qrow>span[data-hint]:hover{border-color:var(--fairy)}
+
+/* songs on a staff */
+.oo-staff{display:grid;grid-template-columns:repeat(6,1fr);row-gap:16px;padding:6px 4px 0;
+  background:repeating-linear-gradient(180deg,transparent 0 9px,rgba(232,197,106,.28) 9px 10px) 0 6px/100% 50px repeat-x,
+             repeating-linear-gradient(180deg,transparent 0 9px,rgba(232,197,106,.28) 9px 10px) 0 106px/100% 50px repeat-x}
+.oo-song{display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center;height:100px}
+.oo-song .oo-i{margin-top:calc(var(--y) * 5px)}
+.oo-song em{font-style:normal;font-size:12.5px;color:var(--mute);line-height:1.15;margin-top:auto}
+.oo-song.on .oo-i{filter:drop-shadow(0 0 8px color-mix(in srgb,var(--c) 70%,transparent))}
+.oo-song.on em{color:var(--text);font-weight:600}
+.oo-song[data-hint]:hover em{color:var(--fairy)}
+
+/* inventory and equipment */
+.oo-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+.oo-grid.eq{grid-template-columns:repeat(auto-fill,minmax(84px,1fr))}
+.oo-slot{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 2px 6px;border-radius:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);text-align:center}
+.oo-slot span{font-size:12px;line-height:1.15;color:var(--faint)}
+.oo-slot.on{background:radial-gradient(circle at 50% 30%,rgba(232,197,106,.16),rgba(255,255,255,.04));border-color:rgba(232,197,106,.4)}
+.oo-slot.on .oo-i .s{fill:var(--gold)}
+.oo-slot.on .oo-i .s[style]{fill:inherit}
+.oo-slot.on span{color:var(--text)}
+.oo-slot[data-hint]:hover{border-color:var(--fairy)}
+
+/* Hyrule */
+.oo-areas{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+.oo-area{display:flex;flex-direction:column;gap:7px;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07)}
+.oo-area header{display:flex;align-items:baseline;gap:8px}
+.oo-area h4{flex:1;margin:0;font-family:var(--head);font-weight:400;font-size:17px;line-height:1.15}
+.oo-area header span{font-size:13.5px;color:var(--mute);font-weight:600;white-space:nowrap}
+.oo-mq{font-style:normal;font-size:11.5px;font-weight:700;color:#1b1030;background:#c9a7ff;border-radius:4px;padding:0 5px;align-self:center}
+.oo-area.go{border-color:var(--fairy);box-shadow:0 0 0 1px rgba(143,216,255,.35),0 0 18px rgba(143,216,255,.18)}
+.oo-area.maybe{border:1px dashed rgba(143,216,255,.6)}
+.oo-area.full{border-color:rgba(232,197,106,.5);background:rgba(232,197,106,.07)}
+.oo-area.dungeon{background:rgba(201,167,255,.05)}
+.oo-keys{display:flex;gap:6px}
+.oo-keys span{display:flex;align-items:center;gap:2px;padding:2px 6px;border-radius:6px;background:rgba(255,255,255,.04)}
+.oo-keys span b{font-size:13px}
+.oo-kinds{display:flex;flex-wrap:wrap;gap:4px}
+.oo-kinds span{display:inline-flex;align-items:center;gap:4px;padding:1px 8px 1px 4px;border-radius:12px;font-size:13px;font-weight:600;background:rgba(255,255,255,.05);color:var(--mute)}
+.oo-kinds span .s{fill:#5f7a8b}
+.oo-kinds span.go{background:rgba(143,216,255,.16);color:var(--fairy2)}
+.oo-kinds span.go .s{fill:var(--fairy)}
+.oo-kinds span.maybe{background:transparent;color:var(--fairy2);border:1px dashed rgba(143,216,255,.7);box-shadow:none;padding:0 7px 0 3px}
+.oo-kinds span.maybe .s{fill:#8fb8cc}
+.oo-kinds span.done{color:var(--gold2);background:rgba(232,197,106,.12)}
+
+@media (max-width:640px){
+  .oo{padding:12px;gap:14px;font-size:15px}
+  .oo-panel{padding:14px 12px}
+  .oo-hero{grid-template-columns:1fr 1fr;padding:14px}
+  .oo-goal{grid-column:1/-1}
+  .oo-num:nth-of-type(2){padding-left:0;border-left:0}
+  .oo-ring{transform:scale(.9)}
+  .oo-grid{grid-template-columns:repeat(4,1fr)}
+  .oo-staff{grid-template-columns:repeat(4,1fr);background:none}
+}

@@ -89,7 +89,10 @@ function demoLogic(s){
   const d = D.slots[s]; if(!d.spheres) return undefined;
   if(!d.sphereOf){ d.sphereOf = new Map(); let i = 0; d.spheres.forEach((n, k) => { for(let j = 0; j < n; j++) d.sphereOf.set(d.locations[i++], k); }); }
   let front = Infinity; for(const [l, k] of d.sphereOf) if(!W[s].checked.has(l) && k < front) front = k;
-  return { logic:[...d.sphereOf].filter(([, k]) => k <= front).map(([l]) => l), goal:front >= d.spheres.length - 1 };
+  const out = { logic:[...d.sphereOf].filter(([, k]) => k <= front).map(([l]) => l), goal:front >= d.spheres.length - 1 };
+  // worlds the server rebuilds several ways (Ocarina of Time) also report checks that are only maybe in logic
+  if(d.game === "Ocarina of Time") out.maybe = [...d.sphereOf].filter(([l, k]) => k === front + 1 && l % 5 === 0).map(([l]) => l);
+  return out;
 }
 
 /* ---------- finding a check ---------- */
@@ -107,7 +110,7 @@ function check(s, l, live){
   const line = sendLine(s, l, info);
   if(!live){ prelude.push(line); if(prelude.length > 400) prelude.shift(); return; }
   T.conns.get(s)?.handle({ cmd:"RoomUpdate", checked_locations:[l], hint_points:points(s) });
-  const lg = demoLogic(s); if(lg){ const sl = T.ensureSlot(s); sl.logic = new Set(lg.logic); sl.logicGoal = lg.goal; }
+  const lg = demoLogic(s); if(lg){ const sl = T.ensureSlot(s); sl.logic = new Set(lg.logic); sl.logicGoal = lg.goal; sl.logicMaybe = lg.maybe ? new Set(lg.maybe) : null; }
   T.conns.get(recv)?.handle({ cmd:"ReceivedItems", index:W[recv].items.length - 1, items:[got], times:[W[recv].times[W[recv].times.length - 1]] });
   T.onPrint(line);
   for(const who of touched) pushHints(who);
