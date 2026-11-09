@@ -1,0 +1,8 @@
+data/ac.json is generated from the Animal Crossing world in AP_ACGC_PC (https://github.com/randomouscrap98/AP_ACGC_PC,
+apworld/animal_crossing, world version 0.5.5; the AP portion is MIT licensed): the museum's fossils, paintings, insects
+and fish with the months and times they appear, the default fish/bug/fossil pass tables, the furniture and chess sets,
+and the catalog category of each item. The logic follows the world's own rules (its feature files).
+
+data/icons.json holds glyphs drawn for this tracker. No Animal Crossing artwork, logos or characters are used.
+
+Animal Crossing is a trademark of Nintendo. This tracker isn't affiliated with or endorsed by Nintendo.
