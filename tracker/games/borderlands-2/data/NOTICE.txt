@@ -1,0 +1,8 @@
+data/bl2.json is generated from the Borderlands 2 world in Bouncy Loot God (https://github.com/EdricY/Bouncy-Loot-God, worlds/borderlands2,
+by EdricY): the areas of Pandora with their level ranges, fast-travel items and DLC, and the kind and area of every check.
+Which checks are in logic is decided by the world itself, rebuilt on the server from the slot's own options
+(relay/ap_logic.py downloads the world at the version the seed was made with), not by this tracker.
+
+data/icons.json holds icons drawn for this tracker. No Borderlands artwork, logos or characters are used.
+
+Borderlands is a trademark of Gearbox Software and Take-Two Interactive. This tracker isn't affiliated with or endorsed by them.

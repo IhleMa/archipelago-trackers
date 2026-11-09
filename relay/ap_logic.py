@@ -12,12 +12,20 @@ It needs Archipelago's source next to it (relay/ap: the core modules and the wor
 installer fetches the files that match the server's Archipelago version) and a few pure-Python packages
 (pyyaml, schema, pathspec, typing_extensions, bsdiff4). Only games listed in GAMES are rebuilt: their worlds
 take every option and their random seed from slot data, so the rebuilt world is the one that was generated.
+
+Worlds that aren't part of Archipelago (EXTERNAL) are downloaded from their own repository the first time a slot
+needs them, at the version that generated the seed (read from slot data), into relay/ap/worlds/<folder>. If a
+later seed needs a different version, the worker answers {"restart": true} and exits; the relay starts it again.
 """
-import hashlib, json, logging, os, sys, time, warnings
+import hashlib, importlib, json, logging, os, shutil, subprocess, sys, tarfile, tempfile, time, warnings
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 AP = os.environ.get("AP_SOURCE") or os.path.join(HERE, "ap")
-GAMES = {"Stardew Valley"}
+GAMES = {"Stardew Valley", "Borderlands 2"}
+EXTERNAL = {
+    "Borderlands 2": {"repo": "EdricY/Bouncy-Loot-God", "path": "worlds/borderlands2", "folder": "borderlands2",
+                      "version": lambda sd: str(sd.get("version") or "")},
+}
 
 warnings.filterwarnings("ignore")
 os.environ.setdefault("SKIP_REQUIREMENTS_UPDATE", "1")
@@ -57,10 +65,55 @@ def build(game, name, slot_data):
     return mw, w
 
 
+def fetch_world(game, slot_data):
+    """Make sure an external world is installed at the version the seed was made with. Returns True when the
+    worker has to restart to load it (a different version is already imported)."""
+    ext = EXTERNAL[game]
+    want = ext["version"](slot_data)
+    dest = os.path.join(AP, "worlds", ext["folder"])
+    have = open(os.path.join(dest, ".version")).read().strip() if os.path.isfile(os.path.join(dest, ".version")) else None
+    if have == want and game in AutoWorldRegister.world_types:
+        return False
+    if have != want:
+        tmp = tempfile.mkdtemp(prefix="apworld-")
+        try:
+            got = None
+            refs = ([f"refs/tags/v{want}", f"refs/tags/{want}"] if want else []) + ["refs/heads/main", "refs/heads/master"]
+            for ref in refs:
+                tgz = os.path.join(tmp, "src.tgz")
+                r = subprocess.run(["curl", "-fsSL", "--max-time", "120", "-o", tgz, f"https://codeload.github.com/{ext['repo']}/tar.gz/{ref}"],
+                                   capture_output=True)
+                if r.returncode == 0:
+                    with tarfile.open(tgz) as tf:
+                        members = [m for m in tf.getmembers() if "/" in m.name and m.name.split("/", 1)[1].startswith(ext["path"] + "/")]
+                        for m in members:
+                            m.name = m.name.split("/", 1)[1][len(ext["path"]) + 1:]
+                        if members:
+                            out = os.path.join(tmp, "world")
+                            tf.extractall(out, members=[m for m in members if m.name and not m.issym() and not m.islnk()])
+                            got = (ref, out)
+                            break
+            if not got:
+                raise RuntimeError(f"couldn't download the {game} world from {ext['repo']}")
+            shutil.rmtree(dest, ignore_errors=True)
+            shutil.move(got[1], dest)
+            with open(os.path.join(dest, ".version"), "w") as f:
+                f.write(want)
+            print(f"ap_logic: installed the {game} world {want or '(unversioned)'} from {ext['repo']} ({got[0]})", file=sys.stderr)
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+    if game in AutoWorldRegister.world_types:     # an older version is loaded in this process
+        return True
+    importlib.import_module("worlds." + ext["folder"])
+    return False
+
+
 def solve(req):
     slot, game = req["slot"], req["game"]
     if game not in GAMES:
         return {"slot": slot, "error": f"no logic for {game}"}
+    if game in EXTERNAL and fetch_world(game, req["slot_data"]):
+        return {"slot": slot, "restart": True}
     key = hashlib.sha1(json.dumps([game, req.get("name"), req["slot_data"]], sort_keys=True).encode()).hexdigest()
     if slot not in worlds or worlds[slot][0] != key:
         t = time.time()
@@ -80,7 +133,7 @@ def solve(req):
 
 
 def main():
-    print(json.dumps({"ready": sorted(g for g in GAMES if g in AutoWorldRegister.world_types)}), file=_out, flush=True)
+    print(json.dumps({"ready": sorted(g for g in GAMES if g in AutoWorldRegister.world_types or g in EXTERNAL)}), file=_out, flush=True)
     for line in sys.stdin:
         line = line.strip()
         if not line:
@@ -92,6 +145,8 @@ def main():
         except Exception as e:      # one bad world must not take the others down
             res = {"slot": req.get("slot") if isinstance(req, dict) else None, "error": f"{type(e).__name__}: {e}"}
         print(json.dumps(res, separators=(",", ":")), file=_out, flush=True)
+        if res.get("restart"):
+            sys.exit(0)
 
 
 if __name__ == "__main__":

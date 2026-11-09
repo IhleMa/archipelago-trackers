@@ -57,7 +57,7 @@ Call `APTracker.register({...})` once:
 | `t.hints` | Known hints for this player's items: `{ item, location, player, found }`. |
 | `t.slotData` | The slot's options (needs `slotData: true`). |
 | `t.hint(names, label)` | Returns attributes that make an element open the hint dialog for those item names. Use it on anything unlockable: `` `<div${t.hint("Hookshot")}>…</div>` ``. |
-| `t.inLogic` | A `Set` of location ids that are in logic right now, worked out by Archipelago itself on the server (`relay/ap_logic.py`), or `null` for games it doesn't rebuild (so far it rebuilds only Stardew Valley). `t.logicGoal` says whether the goal is in logic. |
+| `t.inLogic` | A `Set` of location ids that are in logic right now, worked out by Archipelago itself on the server (`relay/ap_logic.py`), or `null` for games it doesn't rebuild (so far it rebuilds Stardew Valley and Borderlands 2). `t.logicGoal` says whether the goal is in logic. |
 | `APTracker.refresh()` | Draws the open tracker again, for plugins that keep their own view state (a filter, a folded section). |
 | `t.url(path)` | URL of a file in your folder (images etc.). |
 | `t.esc(text)` | Escape text before putting it in HTML. |

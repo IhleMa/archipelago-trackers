@@ -313,15 +313,8 @@ class Logic:
                 log(f"exact logic setup failed: {e}")
         if not os.path.isfile(os.path.join(src, "BaseClasses.py")):
             return
-        try:
-            err = open(os.path.join(os.path.dirname(STATE_FILE) or ".", "relay-logic.log"), "a")
-            self.proc = subprocess.Popen([sys.executable, "-u", os.path.join(here, "ap_logic.py")], stdin=subprocess.PIPE,
-                                         stdout=subprocess.PIPE, stderr=err, text=True, bufsize=1, env=dict(os.environ, AP_SOURCE=src))
-            hello = json.loads(self.proc.stdout.readline() or "{}")
-            self.games = set(hello.get("ready") or [])
-        except Exception as e:
-            log(f"exact logic unavailable: {e}")
-            self.proc = None
+        self.src, self.here = src, here
+        if not self.spawn():
             return
         log(f"exact logic for: {', '.join(sorted(self.games)) or 'no games'}")
         threading.Thread(target=self.work, daemon=True).start()
@@ -329,6 +322,20 @@ class Logic:
             slots = list(R.slots)
         for s in slots:     # slots that connected while this was starting
             self.want(s)
+
+    def spawn(self):
+        import subprocess
+        try:
+            err = open(os.path.join(os.path.dirname(STATE_FILE) or ".", "relay-logic.log"), "a")
+            self.proc = subprocess.Popen([sys.executable, "-u", os.path.join(self.here, "ap_logic.py")], stdin=subprocess.PIPE,
+                                         stdout=subprocess.PIPE, stderr=err, text=True, bufsize=1, env=dict(os.environ, AP_SOURCE=self.src))
+            hello = json.loads(self.proc.stdout.readline() or "{}")
+            self.games = set(hello.get("ready") or [])
+            return True
+        except Exception as e:
+            log(f"exact logic unavailable: {e}")
+            self.proc = None
+            return False
 
     def want(self, slot):
         with lock:
@@ -358,10 +365,23 @@ class Logic:
             try:
                 self.proc.stdin.write(json.dumps(req, separators=(",", ":")) + "\n")
                 res = json.loads(self.proc.stdout.readline())
-            except Exception as e:
+            except Exception as e:       # the worker died: start it again (a few times), then give up
+                self.restarts = getattr(self, "restarts", 0) + 1
                 log(f"exact logic stopped: {e}")
-                self.proc = None
-                return
+                if self.restarts > 5 or not self.spawn():
+                    self.proc = None
+                    return
+                self.q.put(slot)
+                continue
+            if res.get("restart"):     # it installed another version of a world: load it in a fresh worker
+                try:
+                    self.proc.wait(timeout=10)
+                except Exception:
+                    self.proc.kill()
+                if not self.spawn():
+                    return
+                self.q.put(slot)
+                continue
             if res.get("error"):
                 self.fails += 1
                 if self.fails <= 5:

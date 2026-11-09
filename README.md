@@ -15,6 +15,7 @@ Games with their own tracker get a custom view. Every other game gets the generi
 | Animal Crossing | `tracker/games/animal-crossing` |
 | Stardew Valley | `tracker/games/stardew-valley` (exact logic from Archipelago, see below) |
 | Age of Empires II: DE (Ageipelago) | `tracker/games/age-of-empires-2` |
+| Borderlands 2 (Bouncy Loot God) | `tracker/games/borderlands-2` (exact logic from Archipelago, see below) |
 | Elden Ring | `tracker/games/elden-ring` |
 | Old School RuneScape | `tracker/games/old-school-runescape` |
 | Pokémon Platinum | `tracker/games/pokemon-platinum` |
@@ -47,7 +48,7 @@ The server runs a small relay (`relay/relay.py`, standard-library Python; the in
 - **Hints:** hint requests go through the relay and are spent from that player's own points. Only `!hint` and `!hint_location` can be sent this way.
 - **Unlock history:** the relay records when each item arrived and when each player's game connects and leaves, in `relay/relay-history.json`. Every slot gets a History tab, and when a player has been away from their game, it shows what came in meanwhile at the top. The board shows "new while away" on their card. Join and leave only count for the game client itself, not trackers or text clients. Items that arrived while the relay wasn't running are listed without a time.
 - **Progress over time:** below the slots, a chart shows each player's share of checks over the session (last 6 h, last 24 h or all), with a table of checks in the last hour and checks per hour while their game was connected. The relay keeps this in the same history file.
-- **Exact logic:** for games whose world can rebuild itself from slot data (so far Stardew Valley), the relay runs Archipelago's own world code next to it (`relay/ap_logic.py`) and tells every page which checks are in logic right now. `bin/setup-logic.sh` sets this up: it fetches the Archipelago source matching the server's version (only the core modules and those worlds, about 7 MB) into `relay/ap`, and installs five small Python packages into the relay's Python. The relay runs it by itself the first time it starts without it, and `tracker update` and the install run it too. If it can't be set up, those trackers still work, just without the "ready now" marks. Its log is `relay-logic.log`.
+- **Exact logic:** for games whose world can rebuild itself from slot data (so far Stardew Valley and Borderlands 2), the relay runs Archipelago's own world code next to it (`relay/ap_logic.py`) and tells every page which checks are in logic right now. `bin/setup-logic.sh` sets this up: it fetches the Archipelago source matching the server's version (only the core modules and those worlds, about 7 MB) into `relay/ap`, and installs five small Python packages into the relay's Python. The relay runs it by itself the first time it starts without it, and `tracker update` and the install run it too. If it can't be set up, those trackers still work, just without the "ready now" marks. Its log is `relay-logic.log`.
 - **Without the relay:** if Python isn't there, busybox serves the page and each page connects to the server itself, as before. You can force that per page with `?direct`.
 
 ## Demo mode
