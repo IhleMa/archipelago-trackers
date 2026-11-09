@@ -8,6 +8,7 @@ games that still fit) and, at install time, downloads the full tracker with ever
 the GitHub repo in the "Tracker Files" variable. Pterodactyl stores the install script in a
 64 KB column, which is why the games come from the repo instead of the egg itself.
 """
+import tokenize
 import base64, io, json, os, subprocess, sys, tarfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -24,6 +25,18 @@ GAME_NAMES = {"path-of-exile": "Path of Exile", "minecraft": "Minecraft"}
 egg = json.load(open(os.path.join(HERE, "egg-base.json")))
 
 
+def strip_py(data):
+    src = data.decode()
+    drop = set()
+    for tok in tokenize.generate_tokens(io.StringIO(src).readline):
+        if tok.type == tokenize.COMMENT and not tok.line[:tok.start[1]].strip() and tok.start[0] > 1:
+            drop.add(tok.start[0])
+    lines = src.split("\n")
+    out = "\n".join(l for i, l in enumerate(lines, 1) if i not in drop)
+    compile(out, "<bundle>", "exec")
+    return out.encode()
+
+
 def bundle(games):
     files = ["tracker/index.html", "tracker/games/README.md", "relay/relay.py", "relay/ap_logic.py", "bin/httpd.conf", "bin/update-tracker.sh", "bin/setup-logic.sh"]
     for top in ["tracker/core", "tracker/cgi-bin"] + [f"tracker/games/{g}" for g in games]:
@@ -38,6 +51,8 @@ def bundle(games):
             data = open(os.path.join(ROOT, rel), "rb").read()
             if rel.endswith((".js", ".css")):   # the fallback copy only: indentation is dead weight in 64 KB
                 data = b"\n".join(l.strip() for l in data.split(b"\n") if l.strip())
+            elif rel.endswith(".py"):            # likewise comment-only and blank lines (the full file comes with "tracker update")
+                data = strip_py(data)
             ti = tarfile.TarInfo(rel); ti.size = len(data)
             ti.uid = ti.gid = 0; ti.uname = ti.gname = "root"; ti.mtime = 0
             ti.mode = 0o755 if rel.startswith("tracker/cgi-bin/") else 0o644
