@@ -5,7 +5,7 @@
    games/<folder>/ (see games/README.md). */
 "use strict";
 (() => {
-const VERSION = "1.4.2";
+const VERSION = "1.5.0";
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const store = {
@@ -44,6 +44,8 @@ window.APTracker = {
     if(!names.length){ console.error("[tracker] register() needs a game name", def); return; }
     for(const g of names) plugins[g] = Object.assign({}, def, { base, gameName: g });
   },
+  /** Draw the open tracker again (after a plugin changes its own view state, like a filter). */
+  refresh(){ render(); },
   esc
 };
 
@@ -92,7 +94,7 @@ const itemName  = (game, id) => S.dp[game]?.items[id] ?? `Item ${id}`;
 const locName   = (game, id) => S.dp[game]?.locs[id] ?? `Location ${id}`;
 const itemId    = (game, name) => S.dp[game]?.itemIds?.[name];
 const itemClass = f => f & 4 ? "it-trap" : f & 1 ? "it-prog" : f & 2 ? "it-useful" : "";
-const ensureSlot = s => S.slots[s] || (S.slots[s] = { checked:new Set(), missing:new Set(), items:[], times:[], status:0, conn:"connecting", hints:[], points:null, slotData:null, online:null, sessions:[], games:0, prog:[] });
+const ensureSlot = s => S.slots[s] || (S.slots[s] = { checked:new Set(), missing:new Set(), items:[], times:[], status:0, conn:"connecting", hints:[], points:null, slotData:null, online:null, sessions:[], games:0, prog:[], logic:null, logicGoal:null });
 /** Progress over time: [unix seconds, checks done], one point per change (checks within a minute share one). */
 function noteChecks(sl){
   const c = sl.prog, now = Math.round(Date.now() / 1000), n = sl.checked.size;
@@ -320,6 +322,7 @@ function openStream(){
   on("pkt", ({ slot, m }) => { const c = conns.get(slot); if(c) c.handle(m); });
   on("state", ({ slot, conn }) => { const c = conns.get(slot); if(c) c.setState(conn); });
   on("feed", m => onPrint(m));
+  on("logic", x => { const sl = ensureSlot(x.slot); sl.logic = new Set(x.logic); sl.logicGoal = x.goal; render(); });
   on("presence", p => { const sl = ensureSlot(p.slot); sl.online = p.online; sl.sessions = p.sessions || []; render(); });
   on("reset", () => { toast("The server started a new seed. Reloading the tracker…"); setTimeout(() => relayStart(), 1500); });
   es.onerror = () => {
@@ -345,6 +348,7 @@ function applySnap(sn){
     c.handle({ cmd:"ReceivedItems", index:0, items:x.items || [], times:x.times });
     const sl = ensureSlot(slot); if(x.online !== undefined) sl.online = x.online; if(x.sessions) sl.sessions = x.sessions;
     if(x.progress) sl.prog = x.progress.map(p => p.slice());
+    if(x.logic){ sl.logic = new Set(x.logic.logic); sl.logicGoal = x.logic.goal; }
     storeKey(`_read_client_status_${S.team}_${slot}`, x.status);
     storeKey(`_read_hints_${S.team}_${slot}`, x.hints);
     c.setState(x.conn || "connected");
@@ -466,6 +470,8 @@ function context(s){
     /** Attribute string that makes an element open the hint dialog for these item names. */
     hint:(names, label) => ` data-hint="${esc(JSON.stringify([].concat(names)))}"${label ? ` data-hint-label="${esc(label)}"` : ""} tabindex="0" role="button"`,
     url:path => (plugins[game]?.base || "") + path,
+    /** Exact logic from the server (only for games the relay can rebuild): a Set of location ids in logic now, else null. */
+    inLogic:sl.logic, logicGoal:sl.logicGoal,
     esc
   };
 }

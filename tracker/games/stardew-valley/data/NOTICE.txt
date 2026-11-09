@@ -1,0 +1,9 @@
+data/sdv.json is generated from Archipelago's Stardew Valley world (worlds/stardew_valley in Archipelago 0.6.8, MIT licence,
+by Kaito Kid, Jouramie and contributors): which kind of check each location is (from the tags in data/locations.csv), the
+Community Center room of each bundle, the villagers with their birthday season, and the names of a few option values.
+Which checks are in logic is decided by the world itself, rebuilt on the server from the slot's own options
+(relay/ap_logic.py), not by this tracker.
+
+data/pix.json holds pixel icons drawn for this tracker. No Stardew Valley artwork, sprites, logos or characters are used.
+
+Stardew Valley is a trademark of ConcernedApe. This tracker isn't affiliated with or endorsed by ConcernedApe.

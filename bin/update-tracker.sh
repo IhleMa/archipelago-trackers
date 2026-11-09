@@ -36,7 +36,10 @@ for d in "${SRC}"/tracker/games/*/; do
 done
 cp "${SRC}/tracker/games/README.md" tracker/games/README.md
 cp "${SRC}/relay/relay.py" relay/relay.py
+[ -f "${SRC}/relay/ap_logic.py" ] && cp "${SRC}/relay/ap_logic.py" relay/ap_logic.py
 cp "${SRC}/bin/httpd.conf" bin/httpd.conf
 [ -f "${SRC}/bin/update-tracker.sh" ] && cp "${SRC}/bin/update-tracker.sh" bin/update-tracker.sh
+[ -f "${SRC}/bin/setup-logic.sh" ] && cp "${SRC}/bin/setup-logic.sh" bin/setup-logic.sh
 chmod +x tracker/cgi-bin/* 2>/dev/null
 echo "[tracker] Tracker files updated from ${U}"
+[ -f bin/setup-logic.sh ] && bash bin/setup-logic.sh /home/container

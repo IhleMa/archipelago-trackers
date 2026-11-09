@@ -13,6 +13,7 @@ Standard library only. Environment:
                  it is never sent to a browser.
   TRACKER_DIR    folder with index.html, core/, games/ (default: ./tracker)
   RELAY_STATE    file that remembers a slot name so the relay can start before anyone logs in
+  AP_SOURCE      Archipelago's source for exact logic (default: ap/ next to this file; see ap_logic.py)
   RELAY_HISTORY  file that keeps when each item arrived and when each game was online
                  (default: relay-history.json next to RELAY_STATE)
 """
@@ -20,7 +21,7 @@ import asyncio, base64, collections, email.utils, gzip, hashlib, hmac, json, os,
 import sys, threading, time, urllib.parse, uuid, zlib
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 
-VERSION = "1.4.2"
+VERSION = "1.5.0"
 PORT = int(os.environ.get("TRACKER_PORT") or 0)
 AP_HOST = "127.0.0.1"
 AP_PORT = int(os.environ.get("AP_PORT") or 38281)
@@ -149,6 +150,8 @@ class Relay:
                 h = hist(s)
                 out[s] = {"connected": c, "items": st["items"], "status": st["status"], "hints": st["hints"], "conn": st["conn"],
                           "times": h["times"], "online": h["online"], "sessions": h["sessions"], "progress": h["checks"]}
+                if st.get("logic") is not None:
+                    out[s]["logic"] = st["logic"]
             return {"seed": self.seed, "team": self.team, "hint_cost": self.hint_cost, "slots": out, "version": VERSION}
 
 
@@ -283,6 +286,97 @@ def presence(m):
     save_history_soon()
 
 
+# ============================== exact logic (optional) ==============================
+class Logic:
+    """Runs ap_logic.py (Archipelago's own world code) beside the relay, for the games it knows. A slot is
+    re-solved a moment after its items change; the answer goes to every page as a "logic" event."""
+    def __init__(self):
+        self.proc, self.games, self.dirty, self.timer = None, set(), set(), None
+        self.q = queue.Queue()
+        self.fails = 0
+
+    def start(self):
+        threading.Thread(target=self.boot, daemon=True).start()
+
+    def boot(self):
+        import subprocess
+        here = os.path.dirname(os.path.abspath(__file__))
+        src = os.environ.get("AP_SOURCE") or os.path.join(here, "ap")
+        setup = os.path.join(os.path.dirname(here), "bin", "setup-logic.sh")
+        if not os.path.isfile(os.path.join(src, "BaseClasses.py")) and os.path.isfile(setup):
+            log("setting up exact logic (one time)")
+            try:
+                r = subprocess.run(["bash", setup, os.path.dirname(here)], capture_output=True, text=True, timeout=900)
+                for line in (r.stdout + r.stderr).strip().splitlines()[-4:]:
+                    log(line)
+            except Exception as e:
+                log(f"exact logic setup failed: {e}")
+        if not os.path.isfile(os.path.join(src, "BaseClasses.py")):
+            return
+        try:
+            err = open(os.path.join(os.path.dirname(STATE_FILE) or ".", "relay-logic.log"), "a")
+            self.proc = subprocess.Popen([sys.executable, "-u", os.path.join(here, "ap_logic.py")], stdin=subprocess.PIPE,
+                                         stdout=subprocess.PIPE, stderr=err, text=True, bufsize=1, env=dict(os.environ, AP_SOURCE=src))
+            hello = json.loads(self.proc.stdout.readline() or "{}")
+            self.games = set(hello.get("ready") or [])
+        except Exception as e:
+            log(f"exact logic unavailable: {e}")
+            self.proc = None
+            return
+        log(f"exact logic for: {', '.join(sorted(self.games)) or 'no games'}")
+        threading.Thread(target=self.work, daemon=True).start()
+        with lock:
+            slots = list(R.slots)
+        for s in slots:     # slots that connected while this was starting
+            self.want(s)
+
+    def want(self, slot):
+        with lock:
+            game = (R.slot_info.get(str(slot)) or {}).get("game")
+        if not self.proc or game not in self.games:
+            return
+        self.dirty.add(slot)
+        if self.timer is None:
+            self.timer = threading.Timer(1.0, self.flush)
+            self.timer.daemon = True
+            self.timer.start()
+
+    def flush(self):
+        self.timer = None
+        while self.dirty:
+            self.q.put(self.dirty.pop())
+
+    def work(self):
+        while True:
+            slot = self.q.get()
+            with lock:
+                st, info = R.slots.get(slot), R.slot_info.get(str(slot)) or {}
+                if not st or not st.get("connected"):
+                    continue
+                req = {"slot": slot, "game": info.get("game"), "name": info.get("name"),
+                       "slot_data": st["connected"].get("slot_data") or {}, "items": [i["item"] for i in st["items"]]}
+            try:
+                self.proc.stdin.write(json.dumps(req, separators=(",", ":")) + "\n")
+                res = json.loads(self.proc.stdout.readline())
+            except Exception as e:
+                log(f"exact logic stopped: {e}")
+                self.proc = None
+                return
+            if res.get("error"):
+                self.fails += 1
+                if self.fails <= 5:
+                    log(f"exact logic for slot {slot}: {res['error']}")
+                continue
+            data = {"logic": res["logic"], "goal": res["goal"]}
+            with lock:
+                if R.slots.get(slot) is st:
+                    st["logic"] = data
+            broadcast("logic", dict(data, slot=slot))
+
+
+LOGIC = Logic()
+
+
 # ============================== Archipelago connections ==============================
 class SlotConn:
     def __init__(self, name, discover=False):
@@ -400,6 +494,7 @@ class SlotConn:
             R.ready = True
         broadcast("pkt", {"slot": self.slot, "m": dict(self_connected(self.slot), cmd="Connected")})
         broadcast("state", {"slot": self.slot, "conn": "connected"})
+        LOGIC.want(self.slot)
         await self.ws.send([{"cmd": "Get", "keys": keys}, {"cmd": "SetNotify", "keys": keys}])
         if self.result is None:
             self.result = "ok"
@@ -426,6 +521,7 @@ class SlotConn:
                 asyncio.ensure_future(self.ws.send([{"cmd": "Sync"}]))
                 return
         broadcast("pkt", {"slot": self.slot, "m": out})
+        LOGIC.want(self.slot)
         save_history_soon()
 
     def on_room_update(self, m):
@@ -745,6 +841,7 @@ def main():
         save_history()
         os._exit(0)
     signal.signal(signal.SIGTERM, stop)
+    LOGIC.start()
     saved = load_state()
     if saved:
         def first():

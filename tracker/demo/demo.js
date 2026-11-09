@@ -30,7 +30,7 @@ const D = { seed:"DEMO-" + found.map(x => x.game.slice(0, 2)).join("").toUpperCa
 const used = new Set();
 found.forEach((x, i) => {
   let name = x.name || x.game; for(let k = 2; used.has(name); k++) name = `${x.name || x.game} ${k}`; used.add(name);
-  D.slots[i + 1] = { name, game:x.game, slot_data:x.slot_data || {}, pre:x.pre || [], locations:x.locations };
+  D.slots[i + 1] = { name, game:x.game, slot_data:x.slot_data || {}, pre:x.pre || [], locations:x.locations, spheres:x.spheres || null };
   D.datapackage[x.game] = x.datapackage;
 });
 T.applyDataPackage(D.datapackage);
@@ -84,6 +84,14 @@ const say = (s, text) => T.conns.get(s)?.handle({ cmd:"PrintJSON", type:"Command
 const hintsKey = s => `_read_hints_0_${s}`;
 const pushHints = s => T.conns.get(s)?.handle({ cmd:"SetReply", key:hintsKey(s), value:W[s].hints });
 
+/* ---------- pretend "exact logic" for games that use it: everything up to the earliest sphere with checks left ---------- */
+function demoLogic(s){
+  const d = D.slots[s]; if(!d.spheres) return undefined;
+  if(!d.sphereOf){ d.sphereOf = new Map(); let i = 0; d.spheres.forEach((n, k) => { for(let j = 0; j < n; j++) d.sphereOf.set(d.locations[i++], k); }); }
+  let front = Infinity; for(const [l, k] of d.sphereOf) if(!W[s].checked.has(l) && k < front) front = k;
+  return { logic:[...d.sphereOf].filter(([, k]) => k <= front).map(([l]) => l), goal:front >= d.spheres.length - 1 };
+}
+
 /* ---------- finding a check ---------- */
 const prelude = [];
 function check(s, l, live){
@@ -99,6 +107,7 @@ function check(s, l, live){
   const line = sendLine(s, l, info);
   if(!live){ prelude.push(line); if(prelude.length > 400) prelude.shift(); return; }
   T.conns.get(s)?.handle({ cmd:"RoomUpdate", checked_locations:[l], hint_points:points(s) });
+  const lg = demoLogic(s); if(lg){ const sl = T.ensureSlot(s); sl.logic = new Set(lg.logic); sl.logicGoal = lg.goal; }
   T.conns.get(recv)?.handle({ cmd:"ReceivedItems", index:W[recv].items.length - 1, items:[got], times:[W[recv].times[W[recv].times.length - 1]] });
   T.onPrint(line);
   for(const who of touched) pushHints(who);
@@ -151,7 +160,7 @@ for(const s of slots){
   const w = W[s];
   snap.slots[s] = { connected:{ slot:s, team:0, players, slot_info:slotInfo, slot_data:D.slots[s].slot_data,
       checked_locations:[...w.checked], missing_locations:[...w.info.keys()].filter(l => !w.checked.has(l)), hint_points:points(s) },
-    items:w.items, times:w.times, status:w.status, hints:w.hints, conn:"connected", online:w.online, sessions:w.sessions, progress:w.prog };
+    items:w.items, times:w.times, status:w.status, hints:w.hints, conn:"connected", online:w.online, sessions:w.sessions, progress:w.prog, logic:demoLogic(s) };
 }
 T.applySnap(snap);
 for(const line of prelude.filter(() => rnd() < 0.06)) T.onPrint(line);   // a recent-looking feed from across the multiworld

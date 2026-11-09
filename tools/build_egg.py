@@ -25,7 +25,7 @@ egg = json.load(open(os.path.join(HERE, "egg-base.json")))
 
 
 def bundle(games):
-    files = ["tracker/index.html", "tracker/games/README.md", "relay/relay.py", "bin/httpd.conf"]
+    files = ["tracker/index.html", "tracker/games/README.md", "relay/relay.py", "relay/ap_logic.py", "bin/httpd.conf", "bin/update-tracker.sh", "bin/setup-logic.sh"]
     for top in ["tracker/core", "tracker/cgi-bin"] + [f"tracker/games/{g}" for g in games]:
         for dirpath, dirnames, filenames in os.walk(os.path.join(ROOT, top)):
             dirnames.sort()
@@ -235,10 +235,14 @@ for d in "${SRC}"/tracker/games/*/; do
 done
 cp "${SRC}/tracker/games/README.md" tracker/games/README.md
 cp "${SRC}/relay/relay.py" relay/relay.py
+[ -f "${SRC}/relay/ap_logic.py" ] && cp "${SRC}/relay/ap_logic.py" relay/ap_logic.py
 cp "${SRC}/bin/httpd.conf" bin/httpd.conf
 [ -f "${SRC}/bin/update-tracker.sh" ] && cp "${SRC}/bin/update-tracker.sh" bin/update-tracker.sh
+[ -f "${SRC}/bin/setup-logic.sh" ] && cp "${SRC}/bin/setup-logic.sh" bin/setup-logic.sh
 chmod +x tracker/cgi-bin/*
 rm -rf "${TMP}"
+echo "${AP_VERSION}" > Archipelago/.ap_version
+[ -f bin/setup-logic.sh ] && bash bin/setup-logic.sh /mnt/server
 
 cat > start.sh <<'EOF'
 @@START@@EOF

@@ -17,6 +17,7 @@ items that belong to it. The file goes into the game tracker folder whose game.j
 """
 import argparse, glob, json, os, subprocess, sys, tempfile, zipfile
 
+LOGIC_GAMES = {"Stardew Valley"}     # games the relay solves exactly (relay/ap_logic.py): the demo fakes it from spheres
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.getcwd())
 os.environ.setdefault("SKIP_REQUIREMENTS_UPDATE", "1")
@@ -69,10 +70,14 @@ def write_demos(d, only=None):
             continue
         seen = set(order.get(s, []))
         locs = order.get(s, []) + sorted(l for l in d["locations"][s] if l not in seen)
+        spheres = [len(sp.get(s, ())) for sp in d.get("spheres") or []]
+        if len(locs) > sum(spheres):
+            spheres.append(len(locs) - sum(spheres))
         dp = AutoWorldRegister.world_types[info.game].get_data_package_data()
         sd = {k: v for k, v in plain(d["slot_data"].get(s, {})).items() if len(json.dumps(v)) <= 20000 or k in tracker_js}
         out = {"game": info.game, "name": info.name, "slot_data": sd, "pre": list(d["precollected_items"].get(s, [])),
                "locations": locs, "pool": pool.get(s, []),
+               **({"spheres": [n for n in spheres if n]} if info.game in LOGIC_GAMES else {}),
                "datapackage": {"item_name_to_id": dp["item_name_to_id"],
                                "location_name_to_id": {n: i for n, i in dp["location_name_to_id"].items() if i in d["locations"][s]}}}
         dest = os.path.join(REPO, "tracker/games", folder, "demo.json")
