@@ -101,6 +101,19 @@
   }
 
   /* ---------- Town Map tab ---------- */
+  // a tapped (or clicked) place stays open across re-renders until it's tapped again or something else is
+  let openPlace = null;
+  function toggleHot(e){
+    if(e.type === "keydown" && e.key !== "Enter" && e.key !== " ") return;
+    const hot = e.target.closest && e.target.closest(".pp-hot");
+    if(hot && e.target.closest(".pp-pop") && e.type === "click") return;   // clicks inside the card don't close it
+    if(e.type === "keydown"){ if(!hot) return; e.preventDefault(); }
+    const place = hot ? hot.dataset.place : null;
+    openPlace = place && openPlace !== place ? place : null;
+    for(const h of document.querySelectorAll(".pp-hot")){ const on = h.dataset.place === openPlace; h.classList.toggle("open", on); h.setAttribute("aria-expanded", on); }
+  }
+  document.addEventListener("click", toggleHot);
+  document.addEventListener("keydown", toggleHot);
   function renderMap(t){
     const m = model(t), logic = m.haveLogic;
     const st = p => { const v = m.per.get(p); if(!v) return "none"; return v.done === v.total ? "done" : v.ready.length ? "go" : logic ? "shut" : "part"; };
@@ -112,14 +125,24 @@
       const shape = town ? `<rect x="${x - 2.2}" y="${y - 1.4}" width="4.4" height="2.8" rx=".6"/>` : route ? `<circle cx="${x}" cy="${y}" r=".8"/>` : `<rect x="${x - 1.1}" y="${y - 1.1}" width="2.2" height="2.2" rx=".3" transform="rotate(45 ${x} ${y})"/>`;
       const label = town ? `<text x="${x}" y="${y + 3.4}" class="t">${esc(short(p))}</text>` : route ? `<text x="${x + 1.3}" y="${y - .9}" class="r">${esc(short(p))}</text>` : `<text x="${x}" y="${y + 2.9}" class="l">${esc(short(p))}</text>`;
       const cx = x + (town ? 2.5 : route ? -1.4 : 1.4), cy = y - (town ? 1.8 : 1.4);
-      return `<g class="n ${s}${town ? " town" : ""}"><title>${esc(title)}</title>${s === "go" ? `<circle class="halo" cx="${x}" cy="${y}" r="${town ? 3 : 1.9}"/>` : ""}${shape}${label}${r ? `<g class="cnt"><circle cx="${cx}" cy="${cy}" r="1.25"/><text x="${cx}" y="${cy + .5}">${r}</text></g>` : ""}</g>`;
+      return `<g class="n ${s}${town ? " town" : ""}">${v ? "" : `<title>${esc(title)}</title>`}${s === "go" ? `<circle class="halo" cx="${x}" cy="${y}" r="${town ? 3 : 1.9}"/>` : ""}${shape}${label}${r ? `<g class="cnt"><circle cx="${cx}" cy="${cy}" r="1.25"/><text x="${cx}" y="${cy + .5}">${r}</text></g>` : ""}</g>`;
     }).join("");
     const ridge = `<path class="ridge" d="M47 17 l1.6 3 1.4-2.4 1.5 3.2 1.2-2 1.6 3.5M43 47 l1.2-2.4 1.1 2 1.2-2.8 1.1 1.9 1.2-2.5 1.1 2"/>`;
-    const svg = `<div class="pp-mapwrap"><svg class="pp-map" viewBox="-2 -2 108 87" role="img" aria-label="Town Map of Sinnoh">
+    // hotspots over the map: hover (or tap) a place to see the checks you can do there
+    const pct = (x, y) => `left:${((x + 2) / 108 * 100).toFixed(2)}%;top:${((y + 2) / 87 * 100).toFixed(2)}%`;
+    const hots = Object.entries(XY).filter(([p]) => m.per.get(p)).map(([p, [x, y]]) => {
+      const v = m.per.get(p), r = v.ready, town = D.towns.includes(p), dir = (x > 62 ? " l" : "") + (y > 44 ? " u" : "");
+      const title = `${p}: ${v.done} of ${v.total} done${r.length ? `, ${r.length} ready now` : ""}`;
+      const body = r.length ? `<ul>${r.slice(0, r.length > 9 ? 8 : 9).map(n => `<li>${esc(checkName(n))}</li>`).join("")}</ul>${r.length > 9 ? `<small class="more">and ${r.length - 8} more in the list below</small>` : ""}`
+        : `<small>${v.done === v.total ? "Everything here is done." : logic ? "Nothing reachable here yet." : `${v.left} check${v.left === 1 ? "" : "s"} left.`}</small>`;
+      return `<div class="pp-hot${town ? " town" : ""}${r.length ? " go" : ""}${openPlace === p ? " open" : ""}" style="${pct(x, y)}" tabindex="0" role="button" data-place="${esc(p)}" aria-label="${esc(title)}" aria-expanded="${openPlace === p}">
+        <div class="pp-pop${dir}"><header><b>${esc(p)}</b><span>${r.length ? `<em>${r.length} ready</em> · ` : ""}${v.done}/${v.total} done</span></header>${body}</div></div>`;
+    }).join("");
+    const svg = `<div class="pp-mapwrap"><div class="pp-mapbox"><svg class="pp-map" viewBox="-2 -2 108 87" role="img" aria-label="Town Map of Sinnoh">
       <defs><pattern id="ppgrid" width="4" height="4" patternUnits="userSpaceOnUse"><path d="M4 0H0V4" fill="none"/></pattern></defs>
       <rect class="bg" x="-2" y="-2" width="108" height="87" rx="3"/><rect class="grid" x="-2" y="-2" width="108" height="87" fill="url(#ppgrid)"/>
       <text class="area" x="66" y="1.5">BATTLE ZONE</text><text class="area" x="39" y="50.5">MT. CORONET</text>
-      ${ridge}<g class="sea">${sea}</g><g class="paths">${lines}</g>${nodes}</svg></div>`;
+      ${ridge}<g class="sea">${sea}</g><g class="paths">${lines}</g>${nodes}</svg>${hots}</div></div>`;
 
     // the checks you can do, place by place
     const places = [...m.per].filter(([, v]) => v.ready.length).sort((a, b) => areaOrder(a[0]) - areaOrder(b[0]));
@@ -137,7 +160,7 @@
       <div><b>${!logic ? "Town Map" : t.goal ? "Champion!" : m.ready ? `${m.ready} check${m.ready === 1 ? "" : "s"} you can do right now` : m.left ? "Nothing reachable right now" : "Every check done"}</b>
       <span>${!logic ? noLogic(t) : t.goal ? "You entered the Hall of Fame." : t.logicGoal ? "And the Champion is in reach: you have everything for the Pokémon League." : m.ready ? `In ${places.length} place${places.length === 1 ? "" : "s"}, pulsing on the map · ${m.left} checks left in all` : m.left ? "Wait for more items from the other players, or ask for a hint." : ""}</span></div></div>`;
     return `<div class="pp">${card(t, m)}${head}${svg}
-      <p class="pp-legend"><span class="go">pulsing: checks you can do now</span><span class="done">gold: all done</span>${logic ? `<span class="shut">dim: nothing reachable yet</span>` : ""}<span>squares are towns, diamonds landmarks, dots routes</span></p>
+      <p class="pp-legend"><span class="go">pulsing: checks you can do now</span><span class="done">gold: all done</span>${logic ? `<span class="shut">dim: nothing reachable yet</span>` : ""}<span>hover or tap a place to see its checks</span></p>
       ${list ? sec("Ready now", list, "Every check you can do with what you have, along the map", "ball") : ""}
       ${blocked.length && logic ? sec("Not reachable yet", `<div class="pp-blocked">${blocked.map(([p, v]) => `<span>${esc(p)} <small>${v.left}</small></span>`).join("")}</div>`, "Checks left here need something you don't have yet") : ""}
     </div>`;
