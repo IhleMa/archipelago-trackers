@@ -179,7 +179,7 @@
 .pp-hot.open{box-shadow:0 0 0 2px var(--go-hi),0 0 14px rgba(95,216,255,.7)}
 @media (max-width:640px){   /* on a phone the open card becomes a sheet at the bottom of the screen */
   .pp-hot:hover:not(.open)>.pp-pop{display:none}
-  .pp-hot.open>.pp-pop{position:fixed;left:12px;right:12px;top:auto;bottom:12px;max-width:none;max-height:55vh;overflow:auto;font-size:14.5px}
+  .pp-hot.open>.pp-pop{position:fixed;width:auto;min-width:0;left:12px;right:12px;top:auto;bottom:12px;max-width:none;max-height:55vh;overflow:auto;font-size:14.5px}
   .pp-hot.open>.pp-pop::after{content:"Tap the place again or anywhere else to close";display:block;margin-top:8px;font-size:12px;color:var(--dim)}
 }
 @keyframes pp-pop{from{opacity:0;transform:translateY(4px)}}

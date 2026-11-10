@@ -23,7 +23,7 @@ import hashlib, importlib, json, traceback, logging, os, shutil, subprocess, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 AP = os.environ.get("AP_SOURCE") or os.path.join(HERE, "ap")
-GAMES = {"Stardew Valley", "Borderlands 2", "Spyro 2", "Ocarina of Time", "Pokemon Platinum", "Slay the Spire", "Slay the Spire II", "Satisfactory"}
+GAMES = {"Stardew Valley", "Borderlands 2", "Spyro 2", "Ocarina of Time", "Pokemon Platinum", "Slay the Spire", "Slay the Spire II", "Satisfactory", "PathOfExile2"}
 EXTERNAL = {
     "Borderlands 2": {"repo": "EdricY/Bouncy-Loot-God", "path": "worlds/borderlands2", "folder": "borderlands2",
                       "version": lambda sd: str(sd.get("version") or "")},
@@ -32,8 +32,9 @@ EXTERNAL = {
     "Pokemon Platinum": {"repo": "ljtpetersen/platinum_archipelago", "path": "", "folder": "pokemon_platinum",
                          "version": lambda sd: str(sd.get("version") or ""), "prepare": lambda d: _platinum_prepare(d)},
     # slot data has no world version, only the mod's protocol version: follow the repo's release branch for it
-    "Slay the Spire": {"repo": "cjmang/StS-AP-World", "path": "worlds/spire", "folder": "spire",
-                       "version": lambda sd: f"mod{sd.get('mod_version', '')}", "refs": ["refs/heads/sts", "refs/heads/main"]},
+    # slot data has no world version: follow the repo's release branch, refetching when its newest commit changes
+    "Slay the Spire": {"repo": "cjmang/StS-AP-World", "path": "worlds/spire", "folder": "spire", "branch": "sts"},
+    "PathOfExile2": {"repo": "IhleMa/poe2-apworld", "path": "worlds/PathOfExile2", "folder": "PathOfExile2", "branch": "main"},
     # slot data has the world version, but the repo tags its releases by the mod's version: find the tag that has it
     "Slay the Spire II": {"repo": "dlueben1/Slay-the-Spire-2-Archipelago", "path": "world/spire2", "folder": "spire2",
                           "version": lambda sd: str(sd.get("mod_compat_version") or ""),
@@ -181,7 +182,9 @@ ADAPT = {"Spyro 2": {"options": _spyro_options, "after_early": _spyro_after_earl
          "Pokemon Platinum": {"fake": True},
          # rebuilt the way Universal Tracker shows it: in tracker mode the world opens HUB tiers 1-2 and skips the
          # "early buildings" gates, which depend on placement options that slot data doesn't record
-         "Satisfactory": {"fake": True}}
+         "Satisfactory": {"fake": True},
+         # a Manual world built for Universal Tracker: options, class and starting picks all come back from slot data
+         "PathOfExile2": {"fake": True}}
 
 warnings.filterwarnings("ignore")
 os.environ.setdefault("SKIP_REQUIREMENTS_UPDATE", "1")
@@ -233,13 +236,34 @@ def build(game, name, slot_data, locations=(), seed=0):
     return mw, w
 
 
+_heads = {}   # (repo, branch) -> (sha, when looked up)
+
+
+def _branch_head(repo, branch, fallback):
+    """The newest commit on a branch (asked at most every 15 minutes); the installed version if GitHub can't be asked."""
+    sha, when = _heads.get((repo, branch), (None, 0))
+    if sha and time.time() - when < 900:
+        return sha
+    r = subprocess.run(["curl", "-fsSL", "--max-time", "30", "-H", "Accept: application/vnd.github.sha",
+                        f"https://api.github.com/repos/{repo}/commits/{branch}"], capture_output=True, text=True)
+    sha = r.stdout.strip()[:40] if r.returncode == 0 and len(r.stdout.strip()) >= 40 else None
+    if not sha:
+        return fallback or f"{branch}-head"
+    _heads[(repo, branch)] = (sha, time.time())
+    return sha
+
+
 def fetch_world(game, slot_data):
     """Make sure an external world is installed at the version the seed was made with. Returns True when the
     worker has to restart to load it (a different version is already imported)."""
     ext = EXTERNAL[game]
-    want = ext["version"](slot_data)
     dest = os.path.join(AP, "worlds", ext["folder"])
     have = open(os.path.join(dest, ".version")).read().strip() if os.path.isfile(os.path.join(dest, ".version")) else None
+    if "branch" in ext:
+        want = _branch_head(ext["repo"], ext["branch"], have)
+        ext = dict(ext, refs=([want] if len(want) == 40 else []) + [f"refs/heads/{ext['branch']}"])
+    else:
+        want = ext["version"](slot_data)
     if have == want and game in AutoWorldRegister.world_types:
         return False
     if have != want:

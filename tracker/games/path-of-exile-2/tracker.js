@@ -1,9 +1,15 @@
 /* Path of Exile 2 tracker (PathOfExile2 world by IhleMa).
-   An inventory paper doll with each slot drawn in the rarity you've unlocked, a weapon rack for every weapon and
-   off-hand type, flasks and charms, the route through the acts with exactly what the next act needs in logic,
-   and every gem. Logic follows the world's hooks/poe2.py: entering an act needs usable skill gems (right tier, a
-   weapon that can use them), gear unlocks, armour slots, supports, sockets, passives, charms, trials, ascendancy and
-   flasks, each capped by what the seed contains.
+   A banner on every tab (class and ascendancies, goal, how many checks are ready now, embers rising), then:
+   Atlas: the campaign as a road across Wraeclast, seven waypoints from the Riverbank to the Endgame. The road you can
+   travel glows; waypoints you can reach swirl blue with their ready count, finished acts turn gold, the next act pulses.
+   Hover or tap a waypoint for its ready checks, or for exactly what it still needs; the requirements for the next act
+   and every ready check follow underneath. Character: the inventory paper doll, each slot drawn in the rarity you've
+   unlocked, flasks and charms, passives and ascendancy, and a weapon rack. Gems: every skill, spirit and support gem.
+   What's in logic comes from Archipelago itself when the server has exact logic: the relay rebuilds the player's world
+   from slot data (relay/ap_logic.py, the world fetched from IhleMa/poe2-apworld). The requirement tables, and the
+   "ready" marks on servers without exact logic, follow the world's hooks/poe2.py: entering an act needs usable skill
+   gems (right tier, a weapon that can use them), gear unlocks, armour slots, supports, sockets, passives, charms, trials,
+   ascendancy and flasks, each capped by what the seed contains.
    Data: data/poe2.json (from the world), data/icons.json (silhouettes drawn for this tracker). */
 (() => {
   const esc = APTracker.esc;
@@ -111,6 +117,91 @@
     return S;
   }
 
+  /* ready checks: the server's exact logic when it has it, else the requirement tables above */
+  const readyOf = (t, S) => l => !l.done && (t.inLogic ? t.inLogic.has(l.id) : S.inLogic(l.name));
+  const KIND_ORDER = ["Zones", "Bosses", "Pinnacle Bosses", "Level Ups", "Bases", "Goal"];
+  const kindOf = l => { const c = D.locations[l.name]?.[1] || "Other"; return c.startsWith("Bases") ? "Bases" : c.startsWith("Zones") ? "Zones" : c.startsWith("Bosses") ? "Bosses" : c; };
+  const KIND_LABEL = { Zones:"Zones to enter", Bosses:"Bosses", "Pinnacle Bosses":"Pinnacle bosses", "Level Ups":"Level-ups", Bases:"Item bases to pick up", Goal:"Goal", Other:"Other" };
+  const regionReady = (t, S) => { const r = readyOf(t, S), out = REGION_SHORT.map(() => []);
+    for(const l of t.locations){ const g = D.locations[l.name]; if(g && r(l)) out[g[0]].push(l); } return out; };
+  const NOW = () => (Date.now() / 1000 % 86400).toFixed(2);   // keeps animations in step across re-renders
+
+  /* ---------- the banner (every tab) ---------- */
+  function banner(t, S){
+    const C = D.classes[S.cls] || {}, ascs = (C.ascendancies || []).filter(x => t.has("Ascendancy - " + x));
+    const ready = t.locations.filter(readyOf(t, S)).length, done = t.locations.filter(l => l.done).length;
+    const embers = Array.from({ length:14 }, (_, i) => `<i style="--x:${(i * 41) % 100}%;--d:${(i * 1.3) % 9}s;--s:${7 + (i * 7) % 6}s"></i>`).join("");
+    const goalOK = t.inLogic ? !!t.logicGoal : S.goalOK;
+    return `<header class="p2-banner${t.goal ? " won" : goalOK ? " go" : ""}"><div class="p2-embers" aria-hidden="true">${embers}</div>
+      <div class="p2-crest" aria-hidden="true"><span>${esc(S.cls[0] || "?")}</span></div>
+      <div class="p2-who2"><small>Exile</small><b>${esc(S.cls)}</b><span>${ascs.length ? esc(ascs.join(" · ")) : S.o.include_ascendancy ? "not ascended yet" : "no ascendancy in this seed"}</span></div>
+      <div class="p2-goal2"><small>Goal</small><b>${esc(GOAL_TEXT[S.o.goal] || "")}${S.o.goal === 5 ? ` (${S.o.pinnacle_bosses_required})` : ""}</b><span>${t.goal ? "Complete. Wraeclast thanks you." : goalOK ? "Everything for it is in logic." : `Reached: ${esc(REGION_SHORT[Math.max(S.top, 0)])}`}</span></div>
+      <div class="p2-num go"><b>${ready}</b><span>ready right now</span></div>
+      <div class="p2-num"><b>${done}<em>/${t.locations.length}</em></b><span>checks done</span></div>
+      ${t.inLogic || !t.logicNote ? "" : `<p class="p2-note2">${esc(t.logicNote)}</p>`}
+    </header>`;
+  }
+
+  /* ---------- Atlas: the road through the acts ---------- */
+  const WAY = [[6, 74], [20, 46], [35, 70], [50, 34], [65, 64], [80, 32], [93, 58]];   // waypoint positions, % of the map
+  let openWay = null;
+  function toggleWay(e){
+    if(e.type === "keydown" && e.key !== "Enter" && e.key !== " ") return;
+    const hot = e.target.closest && e.target.closest(".p2-way");
+    if(hot && e.target.closest(".p2-pop") && e.type === "click") return;
+    if(e.type === "keydown"){ if(!hot) return; e.preventDefault(); }
+    const r = hot ? hot.dataset.r : null;
+    openWay = r && openWay !== r ? r : null;
+    for(const h of document.querySelectorAll(".p2-way")){ const on = h.dataset.r === openWay; h.classList.toggle("open", on); h.setAttribute("aria-expanded", on); }
+  }
+  document.addEventListener("click", toggleWay);
+  document.addEventListener("keydown", toggleWay);
+  function readyGroups(list, max){
+    const g = new Map(); for(const l of list){ const k = kindOf(l); (g.get(k) || g.set(k, []).get(k)).push(l); }
+    return KIND_ORDER.concat(["Other"]).filter(k => g.has(k)).map(k => [k, g.get(k)]);
+  }
+  function renderAtlas(t){
+    const S = compute(t), R = regionReady(t, S), goalR = GOAL_REGION[S.o.goal], nextR = S.reach.indexOf(false);
+    const totals = REGION_SHORT.map((_, r) => { const l = t.locations.filter(x => D.locations[x.name]?.[0] === r); return [l.length, l.filter(x => x.done).length]; });
+    const pts = WAY.map(([x, y]) => [x * 10, y * 3]);
+    const curve = p => p.map((q, i) => i ? `S${(p[i - 1][0] + q[0]) / 2 + 30},${q[1] - (q[1] - p[i - 1][1]) * .1} ${q[0]},${q[1]}` : `M${q[0]},${q[1]}`).join(" ");
+    const lastOpen = Math.max(0, S.top);
+    const ways = REGION_SHORT.map((name, r) => {
+      const [x, y] = WAY[r], [n, d] = totals[r], ready = R[r].length, open = S.reach[r], full = n && d === n;
+      const past = S.o.goal !== 5 && r > goalR;
+      const st = past ? "past" : full ? "full" : open ? (ready ? "go" : "avail") : r === nextR ? "next" : "shut";
+      const req = r === 6 && S.o.goal === 5 && open ? S.pin : S.reqs[r];
+      const body = open && ready ? readyGroups(R[r]).map(([k, l]) => `<li><b>${l.length}</b> ${esc(KIND_LABEL[k] || k)}${l.length <= 3 ? `<small>${l.map(z => esc(z.name)).join(" · ")}</small>` : ""}</li>`).join("")
+        : open ? `<li class="p2-quiet">${full ? "Every check here is done." : n ? "Nothing reachable here right now." : "No checks here in this seed."}</li>` : "";
+      const pop = `<div class="p2-pop${x > 60 ? " l" : ""}${y > 55 ? " u" : ""}"><header><b>${esc(name)}</b><span>${ready ? `<em>${ready} ready</em> · ` : ""}${d}/${n} done${r === goalR && S.o.goal !== 5 ? " · your goal" : ""}</span></header>
+        ${open ? `<ul class="p2-pk">${body}</ul>` : past ? `<p class="p2-quiet">Beyond your goal.</p>` : `<p class="p2-need">To get in:</p>${reqTable(t, S, req)}`}</div>`;
+      return `<div class="p2-way ${st}${r === goalR && S.o.goal !== 5 ? " goal" : ""}${openWay === String(r) ? " open" : ""}" data-r="${r}" style="left:${x}%;top:${y}%" tabindex="0" role="button" aria-expanded="${openWay === String(r)}" aria-label="${esc(name)}: ${d} of ${n} done${ready ? `, ${ready} ready now` : ""}">
+        <span class="p2-stone"><i class="p2-rune"></i>${ready ? `<em class="p2-cnt">${ready}</em>` : ""}${full ? `<i class="p2-tick"></i>` : ""}</span>
+        <strong>${esc(name)}</strong><small>${open ? (ready ? `${ready} ready` : full ? "done" : `${d}/${n}`) : past ? "beyond goal" : r === nextR ? "next" : "locked"}</small>${pop}</div>`;
+    }).join("");
+    const map = `<section class="p2-atlas"><div class="p2-mapbox">
+      <svg class="p2-road" viewBox="0 0 1000 300" preserveAspectRatio="none" aria-hidden="true">
+        <path class="all" d="${curve(pts)}"/><path class="walked" d="${curve(pts.slice(0, lastOpen + 1))}"/><path class="flow" d="${curve(pts.slice(0, lastOpen + 1))}"/></svg>
+      ${ways}</div>
+      <p class="p2-legend"><span class="go">swirling blue: something ready now</span><span class="full">gold: act done</span><span class="next">amber: the next act</span><span>hover or tap a waypoint</span></p></section>`;
+    // what the next act needs
+    let next = "";
+    if(nextR > 0 && !(S.o.goal !== 5 && nextR > goalR)) next = `<section class="p2-next"><h3>To enter ${esc(REGION_SHORT[nextR])}</h3>${reqTable(t, S, S.reqs[nextR])}</section>`;
+    else if(S.o.goal === 5 && S.reach[6]) next = `<section class="p2-next"><h3>For the pinnacle bosses</h3>${reqTable(t, S, S.pin)}<p class="p2-dim">${t.count("Pinnacle Boss Trophy")} of ${S.o.pinnacle_bosses_required} trophies.</p></section>`;
+    // every ready check
+    const lists = REGION_SHORT.map((name, r) => {
+      if(!R[r].length) return "";
+      return `<article class="p2-rc"><header><b>${esc(name)}</b><span>${R[r].length} ready</span></header>${readyGroups(R[r]).map(([k, l]) => {
+        const items = l.map(z => `<li>${esc(z.name.replace(/^(Pick up|Enter|Defeat the boss of|Reach) /, ""))}</li>`).join("");
+        return `<details${l.length <= 6 ? " open" : ""}><summary><b>${l.length}</b> ${esc(KIND_LABEL[k] || k)}</summary><ul>${items}</ul></details>`; }).join("")}</article>`;
+    }).join("");
+    const total = R.reduce((a, l) => a + l.length, 0);
+    return `<div class="p2" style="--now:${NOW()}">${banner(t, S)}${map}${next}
+      <section><h3>Ready now <small>${total ? `${total} check${total === 1 ? "" : "s"} you can do${t.inLogic ? "" : " (by the world's requirement tables; exact logic needs <code>tracker update</code> on the server)"}` : "nothing reachable right now: wait for more items, or ask for a hint"}</small></h3>
+        ${lists ? `<div class="p2-rcs">${lists}</div>` : ""}</section>
+      ${S.trimmed ? `<p class="p2-note">This seed has fewer checks than a full item pool, so the world trimmed its items and some requirements may be lower than shown.</p>` : ""}</div>`;
+  }
+
   /* ---------- drawing ---------- */
   let gid = 0;
   function icon(name, rarity, size){
@@ -156,7 +247,7 @@
         <div${t.hint(["Weapon Set Passive Points"], "Weapon Set Passive Points")}><dt>Weapon set points</dt><dd>${t.count("Weapon Set Passive Points") * 2}</dd></div>
       </dl></div>`;
 
-    return `<div class="p2"><div class="p2-top">${doll}${sideStats}</div>${route(t, S)}${rack(t)}</div>`;
+    return `<div class="p2" style="--now:${NOW()}">${banner(t, S)}<div class="p2-top">${doll}${sideStats}</div>${rack(t)}</div>`;
   }
 
   /* The route through the acts: where logic lets you go, and what the next act asks for. */
@@ -183,23 +274,6 @@
       return `<li class="${ok ? "ok" : ""}"${!ok && names.length ? t.hint(names, label(req)) : ""}><span>${esc(label(req))}</span><span class="p2-bar"><i style="width:${p}%"></i></span><b>${Math.min(have[k], 999)}<small> / ${req[k]}</small></b></li>`;
     }).join("")}</ul>`;
   }
-  function route(t, S){
-    const goalR = GOAL_REGION[S.o.goal], nextR = S.reach.indexOf(false);
-    const stops = REGION_SHORT.map((name, r) => {
-      const state = S.reach[r] ? "open" : r === nextR ? "next" : "shut";
-      const total = t.locations.filter(l => D.locations[l.name]?.[0] === r), done = total.filter(l => l.done).length;
-      return `<li class="p2-stop ${state}${r === goalR && S.o.goal !== 5 ? " goal" : ""}${r > goalR && S.o.goal !== 5 ? " past" : ""}">
-        <span class="p2-node" aria-hidden="true"></span><span class="p2-act">${esc(name)}</span>
-        <span class="p2-meta">${[total.length ? `${done} / ${total.length} checks` : r > goalR && S.o.goal !== 5 ? "beyond your goal" : "", r === goalR && S.o.goal !== 5 ? "your goal" : ""].filter(Boolean).join(", ")}</span></li>`;
-    }).join("");
-    let next = "";
-    if(nextR > 0) next = `<div class="p2-next"><h4>To enter ${esc(REGION_SHORT[nextR])}</h4>${reqTable(t, S, S.reqs[nextR])}</div>`;
-    else if(S.o.goal === 5) next = `<div class="p2-next"><h4>For the pinnacle bosses</h4>${reqTable(t, S, S.pin)}
-      <p class="p2-dim">${t.count("Pinnacle Boss Trophy")} of ${S.o.pinnacle_bosses_required} trophies.</p></div>`;
-    else next = `<div class="p2-next done"><h4>Every act is in logic</h4><p class="p2-dim">${t.goal ? "Goal complete." : S.goalOK ? "Your goal is in logic." : ""}</p></div>`;
-    return `<section class="p2-route"><div><h3>The road</h3><p class="p2-goal">${esc(GOAL_TEXT[S.o.goal] || "")}${S.o.goal === 5 ? ` (${S.o.pinnacle_bosses_required})` : ""}${S.goalOK ? ` <em>in logic</em>` : ""}</p>
-      <ol class="p2-stops">${stops}</ol></div>${next}${S.trimmed ? `<p class="p2-note">This seed has fewer checks than a full item pool, so the world trimmed its items and some requirements may be lower than shown.</p>` : ""}</section>`;
-  }
   function rack(t){
     const tile = x => { const n = Math.min(4, t.count("Progressive " + x));
       return `<div class="p2-wp r${n}"${t.hint(["Progressive " + x], "Progressive " + x)} title="${esc(`${x}: ${n ? RARITY[n] : "locked"}`)}">${icon(x, n, 58)}<span>${esc(x)}</span>${pips(n)}</div>`; };
@@ -215,7 +289,7 @@
       return `<li class="p2-gem ${gemHue(g)}${have ? " have" : ""}${have && !ok ? " nowep" : ""}"${t.hint([n], n)} title="${esc(`${n}, tier ${g[1]}${g[2].length ? ", needs " + g[2].join(" or ") : ""}${have && !ok ? " (no matching weapon unlocked)" : ""}`)}">${icon("Gem", have ? 9 : 0, 18)}<span>${esc(n)}</span></li>`; };
     const skills = Object.entries(D.gems).filter(([, g]) => g[0] === "S");
     const byTier = new Map(); for(const [n, g] of skills){ if(!byTier.has(g[1])) byTier.set(g[1], []); byTier.get(g[1]).push([n, g]); }
-    let html = `<div class="p2"><p class="p2-dim">Received gems glow. Your class's gems (${esc(group || "")}) come first in each tier. Logic counts a skill gem once its tier is reachable and you have a weapon that can use it. Click any gem to ask where it is.</p>`;
+    let html = `<div class="p2" style="--now:${NOW()}">${banner(t, S)}<p class="p2-dim">Received gems glow. Your class's gems (${esc(group || "")}) come first in each tier. Logic counts a skill gem once its tier is reachable and you have a weapon that can use it. Click any gem to ask where it is.</p>`;
     html += `<section><h3>Skill gems <small>${skills.filter(([n]) => t.has(n)).length} of ${skills.length}</small></h3><div class="p2-tiers">`;
     for(const tier of [...byTier.keys()].sort((a, b) => a - b)){
       const list = byTier.get(tier).sort((a, b) => (b[1][3].includes(group) - a[1][3].includes(group)) || (t.has(b[0]) - t.has(a[0])) || a[0].localeCompare(b[0]));
@@ -238,13 +312,13 @@
     game:"PathOfExile2",
     slotData:true,
     async init(api){ [D, ICONS] = await Promise.all([api.json("data/poe2.json"), api.json("data/icons.json")]); },
-    tabs:[{ id:"p2-char", label:"Character", render:renderChar }, { id:"p2-gems", label:"Gems", render:renderGems }],
+    tabs:[{ id:"p2-atlas", label:"Atlas", render:renderAtlas }, { id:"p2-char", label:"Character", render:renderChar }, { id:"p2-gems", label:"Gems", render:renderGems }],
     checksLabel:"Checks by act",
     locationGroup:n => { const l = D.locations[n]; return l ? REGION_SHORT[l[0]] : "Other"; },
     groupOrder:REGION_SHORT.concat(["Other"]),
     _compute:t => compute(t),   // lets a test compare this logic with the world's own
     card(t){
-      const S = compute(t), left = t.locations.filter(l => !l.done && S.inLogic(l.name)).length;
+      const S = compute(t), left = t.locations.filter(readyOf(t, S)).length;
       return `${esc(S.cls)} · ${S.reach[1] ? "up to " + esc(REGION_SHORT[S.top]) : "still on The Riverbank"} · ${left} checks in logic`;
     }
   });
