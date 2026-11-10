@@ -1,4 +1,6 @@
-/* Pokemon Platinum: a DS-era trainer card in Platinum's gold and black, with a green Pokétch screen.
+/* Pokemon Platinum: a DS-era trainer card in Platinum's gold and black (with a holographic sheen and shining badges),
+   a Town Map of Sinnoh on a dark DS screen, HM discs that spin once usable, and a green Pokétch screen with a scanline.
+   Every animation stops for people who ask for reduced motion.
    Bright Poké Radar cyan means "you can do this now", green means done. Same look in both page themes. Scoped to .pp */
 @import url("https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600&family=Nunito:wght@600;800&display=swap");
 .pp{--ink:#16171c;--panel:#22242c;--edge:#3a3d48;--gold:#d6b35a;--gold-hi:#f3dd96;--plat:#c9ced8;--tx:#eceef3;--dim:#9096a3;--ok:#7fd98a;--go:#5fd8ff;--go-hi:#c8f3ff;--half:#e9b949;
@@ -68,10 +70,8 @@
 /* key items, fly, cartridges */
 .pp-keys{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:6px}
 .pp-key{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:8px;background:var(--panel);border:1px solid var(--edge);color:var(--dim);font-size:14px;min-width:0}
-.pp-key::before{content:"";flex:none;width:9px;height:9px;border-radius:50%;border:2px solid #5d6270}
 .pp-key span{overflow-wrap:anywhere;min-width:0}
 .pp-key.on{color:var(--tx);border-color:#6a5a2c}
-.pp-key.on::before{background:var(--gold);border-color:var(--gold-hi)}
 .pp-key[data-hint]:not(.on):hover{border-color:var(--gold);color:var(--tx)}
 
 /* Sinnoh */
@@ -103,9 +103,9 @@
 .pp-readyhead.goal,.pp-readyhead.won{border-color:var(--gold);background:linear-gradient(135deg,#3d3418,#1b1d24 75%)}
 .pp-readyhead.goal b,.pp-readyhead.won b{color:var(--gold-hi)}
 .pp-readyhead.goal span{color:var(--gold-hi)}
-.pp-ball{flex:none;width:46px;height:46px;border-radius:50%;position:relative;border:3px solid #101116;
+.pp-bigball{flex:none;width:46px;height:46px;border-radius:50%;position:relative;border:3px solid #101116;
   background:linear-gradient(180deg,#e8484a 0 46%,#101116 46% 54%,#f2f2f2 54%);box-shadow:0 0 18px rgba(95,216,255,.35)}
-.pp-ball::after{content:"";position:absolute;left:50%;top:50%;width:12px;height:12px;margin:-9px 0 0 -9px;border-radius:50%;background:#f2f2f2;border:3px solid #101116}
+.pp-bigball::after{content:"";position:absolute;left:50%;top:50%;width:12px;height:12px;margin:-9px 0 0 -9px;border-radius:50%;background:#f2f2f2;border:3px solid #101116}
 .pp-rplaces{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;align-items:start}
 .pp-rplace{border-radius:10px;background:var(--panel);border:1px solid var(--edge);border-left:4px solid var(--go);overflow:hidden}
 .pp-rplace header{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:2px 10px;padding:8px 12px;background:rgba(95,216,255,.08)}
@@ -135,6 +135,92 @@
   .pp-keys{grid-template-columns:repeat(2,minmax(0,1fr))}
   .pp-readyhead{padding:12px 14px;gap:12px}
   .pp-readyhead b{font-size:19px}
-  .pp-ball{width:36px;height:36px}
+  .pp-bigball{width:36px;height:36px}
   .pp-rplaces{grid-template-columns:1fr}
 }
+
+/* ---------- redesign: shared bits ---------- */
+.pp-i{flex:none;display:block;fill:currentColor}
+.pp h3{display:flex;align-items:center;gap:8px}
+.pp h3 .pp-i{color:var(--gold)}
+.pp code{font-size:12.5px}
+/* trainer card: holographic sheen, shining badges, a wobbling ball when something is ready */
+.pp-card{position:relative}
+.pp-card::after{content:"";position:absolute;inset:0;pointer-events:none;mix-blend-mode:soft-light;
+  background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.55) 42%,rgba(160,220,255,.4) 47%,rgba(255,200,240,.35) 52%,transparent 64%) 0 0/250% 100% no-repeat;
+  animation:pp-holo 7s ease-in-out infinite}
+@keyframes pp-holo{0%{background-position:150% 0}55%,100%{background-position:-60% 0}}
+.pp-card.won{border-color:#d4af37;box-shadow:0 0 0 2px #fff3c4,0 6px 24px rgba(214,179,90,.45)}
+.pp-badge.on svg{animation:pp-shine 5s ease-in-out infinite;animation-delay:var(--d)}
+@keyframes pp-shine{0%,80%,100%{filter:drop-shadow(0 0 4px rgba(255,230,140,.45))}88%{filter:drop-shadow(0 0 9px rgba(255,248,214,1)) brightness(1.25)}}
+.pp-stats>div.pp-ready{flex-direction:row;align-items:center;gap:8px}
+.pp-ready>div{display:flex;flex-direction:column}
+.pp-ready .pp-i{color:#e8484a}
+.pp-ready.live .pp-i{animation:pp-wobble 2.6s ease-in-out infinite;transform-origin:50% 90%}
+@keyframes pp-wobble{0%,60%,100%{transform:rotate(0)}68%{transform:rotate(-16deg)}76%{transform:rotate(13deg)}84%{transform:rotate(-7deg)}92%{transform:rotate(3deg)}}
+.pp-goal b{color:#1f6a7a}
+
+/* Town Map */
+.pp-readyhead{margin-top:-6px}
+.pp-mapwrap{overflow-x:auto;border-radius:14px;background:#0f2a33;box-shadow:0 8px 22px rgba(0,0,0,.4)}
+.pp-map{display:block;width:100%;max-width:980px;margin:0 auto;min-width:620px;height:auto}
+.pp-map .bg{fill:#0f2a33}
+.pp-map .grid{opacity:.5}
+.pp-map pattern path{stroke:rgba(140,220,240,.08);stroke-width:.15}
+.pp-map .area{font:800 1.8px var(--face);letter-spacing:.3px;fill:rgba(160,220,235,.35)}
+.pp-map .ridge{fill:none;stroke:rgba(200,190,170,.35);stroke-width:.35;stroke-linejoin:round}
+.pp-map .paths polyline{fill:none;stroke:#4f7d89;stroke-width:.6;stroke-linecap:round;stroke-linejoin:round}
+.pp-map .sea line{stroke:#4f9bd0;stroke-width:.35;stroke-dasharray:.8 .8}
+.pp-map .n rect,.pp-map .n circle{fill:#3c5560;stroke:#0b1d24;stroke-width:.3}
+.pp-map .n.town rect{fill:#5d7c87}
+.pp-map .n text{font-family:var(--face);fill:#a9c6cf;text-anchor:middle;paint-order:stroke;stroke:#0f2a33;stroke-width:.45px}
+.pp-map .n text.t{font-size:1.65px;font-weight:800;fill:#e2eef2}
+.pp-map .n text.r{font-size:1.2px;font-weight:800;text-anchor:start}
+.pp-map .n text.l{font-size:1.2px;font-weight:600}
+.pp-map .n.none{opacity:.35}
+.pp-map .n.done rect,.pp-map .n.done circle{fill:var(--gold);stroke:#5a4610}
+.pp-map .n.done text.t{fill:var(--gold-hi)}
+.pp-map .n.shut{opacity:.5}
+.pp-map .n.go rect,.pp-map .n.go circle:not(.halo){fill:var(--go);stroke:#e9fbff}
+.pp-map .n.go text{fill:#e9fbff}
+.pp-map .halo{fill:none!important;stroke:var(--go)!important;stroke-width:.35!important;transform-box:fill-box;transform-origin:center;animation:pp-ping 2.2s ease-out infinite}
+@keyframes pp-ping{0%{transform:scale(.6);opacity:.9}100%{transform:scale(1.8);opacity:0}}
+.pp-map .cnt circle{fill:#ff6b5a!important;stroke:#0b1d24!important;stroke-width:.25}
+.pp-map .cnt text{font-size:1.4px!important;font-weight:800;fill:#fff!important;stroke:none!important}
+.pp-legend{display:flex;flex-wrap:wrap;gap:6px 18px;margin:-10px 0 0;font-size:13px;color:var(--dim)}
+.pp-legend span{display:inline-flex;align-items:center;gap:6px}
+.pp-legend .go::before,.pp-legend .done::before,.pp-legend .shut::before{content:"";width:11px;height:11px;border-radius:3px}
+.pp-legend .go::before{background:var(--go);box-shadow:0 0 6px var(--go)}
+.pp-legend .done::before{background:var(--gold)}
+.pp-legend .shut::before{background:#3c5560;opacity:.6}
+.pp-sec h4{margin:4px 0 6px}
+
+/* HM discs spin once usable */
+.pp-disc{position:relative;display:grid;place-items:center}
+.pp-disc i{width:30%;height:30%;border-radius:50%;background:#22242c;box-shadow:0 0 0 2px rgba(255,255,255,.15)}
+.pp-hm.on .pp-disc{background:conic-gradient(from 0deg,var(--hc),#f4f6fa 15%,var(--hc) 30%,#6e7684 50%,var(--hc) 70%,#f4f6fa 85%,var(--hc));
+  box-shadow:0 0 10px color-mix(in srgb,var(--hc) 60%,transparent);animation:pp-spin 3.2s linear infinite}
+@keyframes pp-spin{to{transform:rotate(360deg)}}
+.pp-hm.on b{color:#f2fff4}
+
+/* Pokétch scanline */
+.pp-lcd{position:relative;overflow:hidden}
+.pp-lcd::after{content:"";position:absolute;left:0;right:0;height:18px;top:-20px;background:linear-gradient(180deg,transparent,rgba(255,255,255,.22),transparent);animation:pp-scan 4.5s linear infinite;pointer-events:none}
+@keyframes pp-scan{to{top:110%}}
+.pp-poketch.off .pp-lcd::after{display:none}
+
+/* bag */
+.pp-key .pp-i{color:#5d6270}
+.pp-key.on .pp-i{color:var(--gold)}
+.pp-key.fly.on .pp-i{color:#8fd0ff}
+.pp-carts{display:flex;flex-wrap:wrap;gap:14px}
+.pp-cart{display:flex;flex-direction:column;align-items:center;gap:6px;width:92px;color:var(--dim);font-size:13px;text-align:center}
+.pp-cartbody{position:relative;display:block;width:70px;height:62px;border-radius:5px 5px 10px 10px;background:#3a3d48;clip-path:polygon(0 0,82% 0,100% 18%,100% 100%,0 100%);box-shadow:inset 0 -6px 0 rgba(0,0,0,.25)}
+.pp-cartbody i{position:absolute;left:10px;right:10px;top:12px;bottom:18px;border-radius:3px;background:#555a66}
+.pp-cart.on{color:var(--tx)}
+.pp-cart.on .pp-cartbody{background:linear-gradient(160deg,color-mix(in srgb,var(--cc) 75%,#fff),var(--cc) 60%);transition:transform .2s}
+.pp-cart.on .pp-cartbody i{background:linear-gradient(135deg,#fff8,#fff2 60%),color-mix(in srgb,var(--cc) 45%,#111)}
+.pp-cart.on:hover .pp-cartbody{transform:translateY(-4px) rotate(-3deg)}
+.pp-cart[data-hint]:hover{color:var(--tx)}
+
+@media (prefers-reduced-motion:reduce){.pp *,.pp *::before,.pp *::after,.pp-card::after{animation:none!important}}
