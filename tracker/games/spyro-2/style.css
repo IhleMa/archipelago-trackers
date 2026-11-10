@@ -1,6 +1,8 @@
-/* Spyro 2: Avalar at three times of year. Each homeworld is a sky in its season (summer green-blue, autumn amber,
-   winter lavender ice) and every level is a portal ring that fills as you clear it, glowing when something there
-   is ready now and turning to stone while it's locked. Dragon purple and horn gold; the five gem colours only for
+/* Spyro 2: Avalar at three times of year. Each homeworld is a floating island in its season (summer green-blue with
+   fireflies, autumn amber with falling leaves, winter lavender ice with snow) and every level is a swirling portal
+   ring that fills as you clear it: the swirl burns bright when something there is ready now, the portal turns gold
+   when it's done and goes to stone while it's locked. Sparx buzzes about the banner. Every animation stops for people
+   who ask for reduced motion. Dragon purple and horn gold; the five gem colours only for
    gems. Lilita One for titles, Baloo 2 for reading. Same look in both page themes. Scoped to .sp */
 @import url("https://fonts.googleapis.com/css2?family=Lilita+One&family=Baloo+2:wght@500;600;700;800&display=swap");
 .sp{--purple:#7b45d1;--purple2:#5a2fa8;--deep:#2a1452;--gold:#f6c344;--gold2:#ffe39a;--ink:#2a1452;--paper:#fbf7ff;--mute:#6f5f8e;
@@ -18,9 +20,11 @@
 .sp-panel{background:var(--paper);border-radius:20px;padding:16px 18px 18px;box-shadow:0 6px 0 rgba(42,20,82,.35)}
 .sp-panel>h3{margin-bottom:12px}
 
-/* hero */
-.sp-hero{display:grid;grid-template-columns:minmax(0,1.5fr) repeat(2,minmax(0,1fr));gap:16px;align-items:center;padding:18px 22px;border-radius:22px;
-  background:linear-gradient(135deg,var(--deep),#3c1f74);color:#fff;box-shadow:inset 0 0 0 3px rgba(246,195,68,.55),0 6px 0 rgba(20,8,44,.5)}
+/* the sky banner */
+.sp-hero{position:relative;overflow:hidden;display:grid;grid-template-columns:minmax(0,1.5fr) repeat(2,minmax(0,1fr));gap:12px 16px;align-items:center;padding:18px 22px;border-radius:22px;
+  background:radial-gradient(circle at 12% 120%,rgba(255,179,71,.35),transparent 45%),radial-gradient(circle at 92% -20%,rgba(159,224,255,.3),transparent 50%),linear-gradient(135deg,var(--deep),#3c1f74);
+  color:#fff;box-shadow:inset 0 0 0 3px rgba(246,195,68,.55),0 6px 0 rgba(20,8,44,.5)}
+.sp-hero:not(:has(.sp-big.go)){grid-template-columns:minmax(0,2fr) minmax(0,1fr)}
 .sp-hero small{font-weight:800;color:var(--gold)}
 .sp-hero h2{font-family:var(--head);font-weight:400;font-size:clamp(30px,4.6vw,44px);line-height:1;margin:2px 0 4px;color:var(--gold2);text-shadow:0 3px 0 #b8801c}
 .sp-hero p{margin:0;color:#d8c9f5;font-weight:600}
@@ -28,15 +32,26 @@
 .sp-hero.done h2{color:#9dffbf;text-shadow:0 3px 0 var(--go2)}
 .sp-big{padding-left:16px;border-left:2px solid rgba(255,255,255,.18)}
 .sp-big b{display:block;font-family:var(--head);font-weight:400;font-size:46px;line-height:.95}
-.sp-big.go b{color:var(--go)}
+.sp-big.go b{color:var(--go);text-shadow:0 0 18px rgba(79,209,122,.6)}
 .sp-big b em{font-style:normal;font-size:22px;color:#b9a6e6}
 .sp-big span{font-weight:700;color:#d8c9f5}
-.sp-warn{grid-column:1/-1;font-size:14px}
+.sp-warn{font-size:14px;margin-top:4px!important}
+.sp-mini{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px}
+.sp-mini span{display:inline-flex;align-items:center;gap:6px;padding:3px 12px 3px 6px;border-radius:16px;background:rgba(255,255,255,.1);font-weight:700}
+.sp-mini b{font-family:var(--head);font-weight:400;font-size:20px}
+.sp-mini em{font-style:normal;color:#b9a6e6;font-size:14px}
+.sp-mini .talisman .s{fill:var(--gold)}.sp-mini .orb .s{fill:#c7a6ff}.sp-mini .skill .s{fill:#7ee08f}.sp-mini .token .s{fill:#ff6f86}
+/* Sparx flits around the corner */
+.sp-sparx{position:absolute;right:22px;top:14px;pointer-events:none;filter:drop-shadow(0 0 8px #ffe066)}
+.sp-sparx .s{fill:#ffe066}
+@keyframes sp-buzz{0%,100%{transform:translate(0,0) rotate(0)}20%{transform:translate(-14px,6px) rotate(-12deg)}40%{transform:translate(-4px,14px) rotate(8deg)}60%{transform:translate(-20px,-2px) rotate(-6deg)}80%{transform:translate(-8px,-6px) rotate(10deg)}}
+.sp-sparx{animation:sp-buzz 5s ease-in-out infinite}
 
 /* collectibles */
 .sp-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
 .sp-stat{display:grid;grid-template-columns:auto 1fr;column-gap:12px;align-items:center;padding:12px 14px;background:var(--paper);border-radius:18px;box-shadow:0 5px 0 rgba(42,20,82,.35)}
-.sp-stat .sp-i{grid-row:1/span 3}
+.sp-stat .sp-i{grid-row:1/span 4}
+.sp-stat small{grid-column:2}
 .sp-stat b{font-family:var(--head);font-weight:400;font-size:32px;line-height:1}
 .sp-stat b em{font-style:normal;font-size:17px;color:var(--mute)}
 .sp-stat span{font-weight:700;font-size:14.5px}
@@ -55,41 +70,101 @@
 .sp-move.vanilla .s{fill:#dccdf6}
 .sp-move[data-hint]:hover{background:#fff}
 
-/* homeworld skies with portals */
-.sp-world{--sky1:#9fe0ff;--sky2:#d8f6c6;--ground:#4fae5a;--ring:#ffd34d;position:relative;border-radius:24px;padding:16px 18px 18px;overflow:hidden;
-  background:linear-gradient(180deg,var(--sky1) 0%,var(--sky2) calc(100% - 16px),var(--ground) calc(100% - 16px));padding-bottom:30px;box-shadow:0 6px 0 rgba(42,20,82,.35)}
-.sp-world.autumn{--sky1:#ffcf8a;--sky2:#ffe7c2;--ground:#c9772f;--ring:#ffb347}
-.sp-world.winter{--sky1:#c9c6ff;--sky2:#eef1ff;--ground:#9fb6e8;--ring:#bfe6ff}
-.sp-world.flat{background:linear-gradient(180deg,var(--sky1),var(--sky2))}
-.sp-world>header{display:flex;align-items:center;gap:12px;margin-bottom:12px}
-.sp-world>header h3{font-size:28px;color:var(--deep);text-shadow:0 2px 0 rgba(255,255,255,.7)}
-.sp-world>header span{font-weight:700;color:#4d3b72}
-.sp-world>header span b{color:var(--go2)}
-.sp-world.summer>header .s{fill:#5fd068}.sp-world.autumn>header .s{fill:#ff8a3d}.sp-world.winter>header .s{fill:#fff}
-.sp-portals{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:12px 8px}
-.sp-portal{display:flex;flex-direction:column;align-items:center;text-align:center;gap:2px}
-.sp-portal>a{position:relative;display:grid;place-items:center;width:84px;height:84px;text-decoration:none;color:inherit}
-.sp-ring{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
-.sp-ring circle{fill:none;stroke-width:9}
-.sp-ring .bg{stroke:rgba(42,20,82,.22);fill:rgba(42,20,82,.78)}
+/* Avalar: floating islands of portals */
+.sp-islands{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px}
+.sp-island{--sky1:#9fe0ff;--sky2:#d8f6c6;--ground:#4fae5a;--ground2:#2f7f3a;--ring:#ffd34d;--fx:#fff7a8;position:relative;border-radius:26px;padding:14px 14px 10px;
+  background:linear-gradient(180deg,var(--sky1),var(--sky2));box-shadow:0 6px 0 rgba(42,20,82,.35)}
+.sp-weather{border-radius:0 0 26px 26px}
+.sp-island.autumn{--sky1:#ffcf8a;--sky2:#ffe7c2;--ground:#d48a3a;--ground2:#9a5a1f;--ring:#ffb347;--fx:#e8742c}
+.sp-island.winter{--sky1:#c9c6ff;--sky2:#eef1ff;--ground:#bcd0f5;--ground2:#7f97cf;--ring:#bfe6ff;--fx:#fff}
+.sp-island>header{position:relative;z-index:2;display:flex;align-items:center;gap:10px}
+.sp-island>header h3{font-size:26px;color:var(--deep);text-shadow:0 2px 0 rgba(255,255,255,.7)}
+.sp-island>header span{font-weight:700;color:#4d3b72;font-size:14.5px}
+.sp-island>header span b{color:var(--go2)}
+.sp-island.summer>header .s{fill:#5fd068}.sp-island.autumn>header .s{fill:#ff8a3d}.sp-island.winter>header .s{fill:#fff}
+.sp-sky{position:relative;aspect-ratio:1/1;margin:0 4%}
+/* the island itself, floating gently */
+.sp-land{position:absolute;left:18%;right:18%;top:24%;bottom:20%;border-radius:50% 50% 46% 46%/42% 42% 58% 58%;
+  background:radial-gradient(ellipse at 50% 30%,color-mix(in srgb,var(--ground) 70%,#fff),var(--ground) 55%,var(--ground2));
+  box-shadow:0 26px 0 -6px color-mix(in srgb,var(--ground2) 80%,#000),0 34px 30px rgba(42,20,82,.25);animation:sp-float 6s ease-in-out infinite}
+@keyframes sp-float{50%{transform:translateY(-6px)}}
+/* weather: fireflies, leaves, snow */
+.sp-weather{position:absolute;inset:-6% -4% 0;pointer-events:none;overflow:hidden}
+.sp-weather i{position:absolute;left:var(--x);top:-6%;width:7px;height:7px;border-radius:50%;background:var(--fx);opacity:.85;animation:sp-fall var(--s) linear infinite;animation-delay:calc(var(--d) * -1)}
+.sp-island.summer .sp-weather i{top:auto;bottom:10%;width:5px;height:5px;box-shadow:0 0 8px 2px var(--fx);animation-name:sp-firefly}
+.sp-island.autumn .sp-weather i{width:9px;height:6px;border-radius:0 80% 0 80%}
+@keyframes sp-fall{0%{transform:translate(0,0) rotate(0)}50%{transform:translate(18px,55cqh) rotate(160deg)}100%{transform:translate(-6px,115cqh) rotate(320deg)}}
+.sp-sky{container-type:size}
+@keyframes sp-firefly{0%,100%{transform:translate(0,0);opacity:.2}25%{transform:translate(12px,-30cqh);opacity:.95}50%{transform:translate(-10px,-55cqh);opacity:.4}75%{transform:translate(8px,-35cqh);opacity:.9}}
+
+/* portals */
+.sp-portal{position:absolute;z-index:3;width:0;height:0;display:flex;flex-direction:column;align-items:center;outline:none}
+.sp-gate{position:relative;flex:none;display:grid;place-items:center;width:60px;height:60px;margin-top:-30px;border-radius:50%;cursor:pointer}
+.sp-portal.home .sp-gate{width:92px;height:92px;margin-top:-46px}
+.sp-ring{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg);z-index:2}
+.sp-ring circle{fill:none;stroke-width:8}
+.sp-ring .bg{stroke:rgba(42,20,82,.3)}
 .sp-ring .p{stroke:var(--ring);stroke-linecap:round}
-.sp-core{position:relative;display:grid;place-items:center;width:52px;height:52px;border-radius:50%;
-  background:radial-gradient(circle at 35% 30%,#b892ff,#5a2fa8 70%);box-shadow:inset 0 0 0 2px rgba(255,255,255,.35)}
-.sp-core b{font-family:var(--head);font-weight:400;font-size:22px;color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.35)}
+.sp-swirl{position:absolute;inset:6px;border-radius:50%;background:conic-gradient(from 0deg,#5a2fa8,#b892ff,#2a1452,#8f5ce0,#5a2fa8);animation:sp-swirl 7s linear infinite}
+.sp-core{position:relative;z-index:3;display:grid;place-items:center;width:62%;height:62%;border-radius:50%;background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.25),rgba(42,20,82,.55) 70%)}
+.sp-core b{font-family:var(--head);font-weight:400;font-size:21px;color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.35)}
 .sp-core .s{fill:#fff}
-.sp-portal strong{font-weight:800;font-size:14px;line-height:1.1;color:var(--deep);text-shadow:0 0 6px rgba(255,255,255,.9),0 1px 0 #fff;max-width:120px}
-.sp-portal small{font-weight:700;font-size:12.5px;color:#4d3b72;background:rgba(255,255,255,.7);border-radius:10px;padding:0 8px}
-.sp-portal.go .sp-core{background:radial-gradient(circle at 35% 30%,#a8ffc6,#1f8a48 72%);box-shadow:0 0 0 4px rgba(79,209,122,.35),0 0 18px 4px rgba(79,209,122,.65)}
-.sp-portal.go small{background:var(--go2);color:#fff}
-.sp-portal.full .sp-ring .bg{fill:#b8801c}
-.sp-portal.full .sp-core{background:radial-gradient(circle at 35% 30%,#fff3c4,#e2a325 72%)}
-.sp-portal.full .sp-core .s{fill:#fff}
-.sp-portal.shut .sp-ring .bg{fill:#8a8597;stroke:#6e6a7c}
-.sp-portal.shut .sp-core{background:radial-gradient(circle at 35% 30%,#c9c4d6,#77718a 72%)}
+.sp-portal strong{margin-top:3px;width:max-content;max-width:104px;text-align:center;font-weight:800;font-size:12.5px;line-height:1.05;color:var(--deep);text-shadow:0 0 5px rgba(255,255,255,.95),0 1px 0 #fff}
+.sp-portal.home strong{font-size:14px}
+.sp-island.many .sp-portal:not(.home) .sp-gate{width:48px;height:48px;margin-top:-24px}
+.sp-island.many .sp-portal:not(.home) .sp-core b{font-size:17px}
+.sp-island.many .sp-portal:not(.home) strong{max-width:76px;font-size:11.5px}
+.sp-island.many .sp-portal:not(.home) .sp-pop{top:32px}
+.sp-island.many .sp-portal:not(.home) .sp-pop.u{top:auto;bottom:30px}
+.sp-island{padding-bottom:22px}
+.sp-count{position:absolute;z-index:4;right:-2px;top:-2px;min-width:22px;height:22px;padding:0 5px;border-radius:11px;display:grid;place-items:center;font-style:normal;font-family:var(--head);font-size:14px;background:var(--go);color:#0b3a1c;box-shadow:0 0 0 2px #fff}
+@keyframes sp-swirl{to{transform:rotate(360deg)}}
+.sp-portal.go .sp-swirl{background:conic-gradient(from 0deg,#1f8a48,#a8ffc6,#0e5a2c,#4fd17a,#1f8a48);animation-duration:2.2s}
+.sp-portal.go .sp-gate{box-shadow:0 0 0 3px rgba(79,209,122,.35),0 0 22px 6px rgba(79,209,122,.6);animation:sp-glow 2.4s ease-in-out infinite}
+@keyframes sp-glow{50%{box-shadow:0 0 0 6px rgba(79,209,122,.2),0 0 30px 10px rgba(79,209,122,.75)}}
+.sp-portal.idle .sp-swirl{animation-duration:16s;filter:saturate(.6) brightness(.85)}
+.sp-portal.full .sp-swirl{background:conic-gradient(from 0deg,#e2a325,#fff3c4,#b8801c,#ffd34d,#e2a325);animation-duration:12s}
+.sp-portal.full .sp-ring .p{stroke:#fff3c4}
+.sp-portal.shut .sp-swirl{background:radial-gradient(circle at 35% 30%,#c9c4d6,#77718a 72%);animation:none}
+.sp-portal.shut .sp-ring .bg{stroke:#6e6a7c}
 .sp-portal.shut strong{color:#4a4460}
-.sp-portal.home .sp-core{width:58px;height:58px}
-@media (prefers-reduced-motion:no-preference){.sp-portal.go .sp-core{animation:sp-glow 2.4s ease-in-out infinite}}
-@keyframes sp-glow{50%{box-shadow:0 0 0 6px rgba(79,209,122,.25),0 0 26px 8px rgba(79,209,122,.75)}}
+.sp-portal:hover .sp-gate,.sp-portal.open .sp-gate,.sp-portal:focus-visible .sp-gate{outline:3px solid #fff;outline-offset:2px}
+/* the hover / tap card */
+.sp-pop{display:none;position:absolute;z-index:10;left:50%;top:44px;width:max-content;min-width:180px;max-width:270px;padding:10px 12px;border-radius:16px;text-align:left;cursor:default;
+  background:var(--paper);color:var(--ink);font-size:13.5px;line-height:1.3;box-shadow:0 0 0 3px var(--purple),0 12px 26px rgba(20,8,44,.45)}
+.sp-portal.home .sp-pop{top:60px}
+.sp-pop.l{left:auto;right:-10px}
+.sp-pop.u{top:auto;bottom:40px}
+.sp-portal.home .sp-pop.u{bottom:56px}
+.sp-portal:hover>.sp-pop,.sp-portal.open>.sp-pop{display:block;animation:sp-pop .15s ease-out}
+.sp-portal.open>.sp-pop{animation:none}
+.sp-portal:hover,.sp-portal.open{z-index:9}
+@keyframes sp-pop{from{opacity:0;transform:translateY(4px)}}
+.sp-pop header{display:flex;flex-direction:column;margin-bottom:6px;padding-bottom:6px;border-bottom:2px dashed #e0d6f3}
+.sp-pop header b{font-family:var(--head);font-weight:400;font-size:18px}
+.sp-pop header span{color:var(--mute);font-weight:700;font-size:12.5px}
+.sp-pop header em,.sp-rcard header span em{font-style:normal;background:var(--go);color:#0b3a1c;border-radius:9px;padding:0 6px;font-weight:800}
+.sp-pop small{color:var(--mute);font-weight:600}
+.sp-pop .sp-need{margin:0}
+.sp-pop ul,.sp-rcard ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:3px}
+.sp-pop li,.sp-rcard li{display:flex;align-items:center;gap:6px;font-weight:600}
+.sp-pop li .s,.sp-rcard li .s{fill:var(--go)}
+.sp-pop li.gems .s,.sp-rcard li.gems .s{fill:#ff8ad8}
+.sp-pop li.more{color:var(--mute);padding-left:24px}
+.sp-legend{display:flex;flex-wrap:wrap;gap:6px 18px;margin:-4px 0 0;font-size:14px;font-weight:600;color:#e6dcfa}
+.sp-legend span{display:inline-flex;align-items:center;gap:6px}
+.sp-legend .go::before,.sp-legend .full::before,.sp-legend .shut::before{content:"";width:13px;height:13px;border-radius:50%}
+.sp-legend .go::before{background:conic-gradient(#1f8a48,#a8ffc6,#1f8a48);box-shadow:0 0 6px #4fd17a}
+.sp-legend .full::before{background:conic-gradient(#e2a325,#fff3c4,#e2a325)}
+.sp-legend .shut::before{background:#8a8597}
+/* ready list */
+.sp-rcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;align-items:start}
+.sp-rcard{border-radius:16px;padding:10px 12px;background:#f3eefb;border-left:6px solid var(--go)}
+.sp-rcard.summer{background:linear-gradient(135deg,#e3f7ff,#effbe6)}.sp-rcard.autumn{background:linear-gradient(135deg,#fff0d8,#fff7ea)}.sp-rcard.winter{background:linear-gradient(135deg,#ecebff,#f7f8ff)}
+.sp-rcard header{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.sp-rcard header b{flex:1;font-family:var(--head);font-weight:400;font-size:18px}
+.sp-rcard header span{font-weight:700;font-size:12.5px;color:var(--mute)}
+.sp-rcard header .s{fill:#b892ff}
 
 /* levels */
 .sp-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px;align-items:start}
@@ -117,13 +192,35 @@
 .sp-meter i{display:block;height:100%;background:var(--gold)}
 .sp-meter i.r{background:var(--go)}
 
+/* Levels tab: one panel per homeworld */
+.sp-world{--sky1:#9fe0ff;--sky2:#d8f6c6;position:relative;border-radius:24px;padding:16px 18px 18px;background:linear-gradient(180deg,var(--sky1),var(--sky2));box-shadow:0 6px 0 rgba(42,20,82,.35)}
+.sp-world.autumn{--sky1:#ffcf8a;--sky2:#ffe7c2}
+.sp-world.winter{--sky1:#c9c6ff;--sky2:#eef1ff}
+.sp-world>header{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.sp-world>header h3{font-size:28px;color:var(--deep);text-shadow:0 2px 0 rgba(255,255,255,.7)}
+.sp-world.summer>header .s{fill:#5fd068}.sp-world.autumn>header .s{fill:#ff8a3d}.sp-world.winter>header .s{fill:#fff}
+.sp-card.full{background:#fffaf0;box-shadow:0 0 0 2px var(--gold),0 4px 0 rgba(42,20,82,.25)}
+/* collectibles: a gentle bob and a fill bar */
+.sp-stat .sp-i{animation:sp-bob 3.2s ease-in-out infinite;animation-delay:var(--d)}
+@keyframes sp-bob{50%{transform:translateY(-4px) rotate(-4deg)}}
+.sp-fill{grid-column:2;display:block;height:6px;margin-top:4px;border-radius:3px;background:#e6ddf6;overflow:hidden}
+.sp-fill u{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));text-decoration:none}
+.sp-stat.full{box-shadow:0 0 0 3px var(--gold),0 5px 0 rgba(42,20,82,.35)}
+.sp-move.on .sp-i{filter:drop-shadow(0 0 6px rgba(246,195,68,.7))}
+
+@media (prefers-reduced-motion:reduce){.sp *,.sp *::before,.sp *::after{animation:none!important}}
 @media (max-width:640px){
   .sp{padding:12px;gap:14px;border-radius:18px;font-size:15px}
-  .sp-hero{grid-template-columns:1fr 1fr;padding:16px}
-  .sp-hero>div:first-child{grid-column:1/-1}
-  .sp-big:nth-of-type(2){padding-left:0;border-left:0}
-  .sp-portals{grid-template-columns:repeat(3,1fr)}
-  .sp-portal>a{width:74px;height:74px}
-  .sp-core{width:46px;height:46px}
+  .sp-hero,.sp-hero:not(:has(.sp-big.go)){grid-template-columns:1fr 1fr;padding:16px}
+  .sp-goal{grid-column:1/-1}
+  .sp-big:nth-of-type(2),.sp-hero:not(:has(.sp-big.go)) .sp-big{padding-left:0;border-left:0}
+  .sp-islands{grid-template-columns:1fr}
+  .sp-sky{margin:0}
+  .sp-gate{width:50px;height:50px;margin-top:-25px}
+  .sp-portal.home .sp-gate{width:76px;height:76px;margin-top:-38px}
+  .sp-portal strong{max-width:84px;font-size:11.5px}
+  .sp-portal:hover:not(.open)>.sp-pop{display:none}
+  .sp-portal.open>.sp-pop{position:fixed;left:12px;right:12px;top:auto;bottom:12px;max-width:none;max-height:55vh;overflow:auto;font-size:14.5px}
+  .sp-portal.open>.sp-pop::after{content:"Tap the portal again or anywhere else to close";display:block;margin-top:8px;font-size:12px;color:var(--mute)}
   .sp-cards{grid-template-columns:1fr}
 }
