@@ -173,3 +173,7 @@ button.sf-node:hover{border-color:#8fd0ff;color:var(--tx)}
   .sf-mss{grid-template-columns:1fr}
   .sf-parts{grid-template-columns:1fr 1fr}
 }
+
+/* keep animations in step across re-renders: every one starts at the phase the clock says (see NOW() in tracker.js) */
+.sf *,.sf *::before,.sf *::after{animation-delay:calc(var(--now,0) * -1s)!important}
+

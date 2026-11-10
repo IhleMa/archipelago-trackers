@@ -105,7 +105,7 @@
 .sp-ring circle{fill:none;stroke-width:8}
 .sp-ring .bg{stroke:rgba(42,20,82,.3)}
 .sp-ring .p{stroke:var(--ring);stroke-linecap:round}
-.sp-swirl{position:absolute;inset:6px;border-radius:50%;background:conic-gradient(from 0deg,#5a2fa8,#b892ff,#2a1452,#8f5ce0,#5a2fa8);animation:sp-swirl 7s linear infinite}
+.sp-swirl{position:absolute;inset:6px;border-radius:50%;background:conic-gradient(from 0deg,#5a2fa8,#b892ff,#2a1452,#8f5ce0,#5a2fa8);animation:sp-swirl 12s linear infinite}
 .sp-core{position:relative;z-index:3;display:grid;place-items:center;width:62%;height:62%;border-radius:50%;background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.25),rgba(42,20,82,.55) 70%)}
 .sp-core b{font-family:var(--head);font-weight:400;font-size:21px;color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.35)}
 .sp-core .s{fill:#fff}
@@ -119,11 +119,11 @@
 .sp-island{padding-bottom:22px}
 .sp-count{position:absolute;z-index:4;right:-2px;top:-2px;min-width:22px;height:22px;padding:0 5px;border-radius:11px;display:grid;place-items:center;font-style:normal;font-family:var(--head);font-size:14px;background:var(--go);color:#0b3a1c;box-shadow:0 0 0 2px #fff}
 @keyframes sp-swirl{to{transform:rotate(360deg)}}
-.sp-portal.go .sp-swirl{background:conic-gradient(from 0deg,#1f8a48,#a8ffc6,#0e5a2c,#4fd17a,#1f8a48);animation-duration:2.2s}
+.sp-portal.go .sp-swirl{background:conic-gradient(from 0deg,#1f8a48,#a8ffc6,#0e5a2c,#4fd17a,#1f8a48);animation-duration:7s}
 .sp-portal.go .sp-gate{box-shadow:0 0 0 3px rgba(79,209,122,.35),0 0 22px 6px rgba(79,209,122,.6);animation:sp-glow 2.4s ease-in-out infinite}
 @keyframes sp-glow{50%{box-shadow:0 0 0 6px rgba(79,209,122,.2),0 0 30px 10px rgba(79,209,122,.75)}}
-.sp-portal.idle .sp-swirl{animation-duration:16s;filter:saturate(.6) brightness(.85)}
-.sp-portal.full .sp-swirl{background:conic-gradient(from 0deg,#e2a325,#fff3c4,#b8801c,#ffd34d,#e2a325);animation-duration:12s}
+.sp-portal.idle .sp-swirl{animation-duration:20s;filter:saturate(.6) brightness(.85)}
+.sp-portal.full .sp-swirl{background:conic-gradient(from 0deg,#e2a325,#fff3c4,#b8801c,#ffd34d,#e2a325);animation-duration:16s}
 .sp-portal.full .sp-ring .p{stroke:#fff3c4}
 .sp-portal.shut .sp-swirl{background:radial-gradient(circle at 35% 30%,#c9c4d6,#77718a 72%);animation:none}
 .sp-portal.shut .sp-ring .bg{stroke:#6e6a7c}
@@ -224,3 +224,9 @@
   .sp-portal.open>.sp-pop::after{content:"Tap the portal again or anywhere else to close";display:block;margin-top:8px;font-size:12px;color:var(--mute)}
   .sp-cards{grid-template-columns:1fr}
 }
+
+/* keep animations in step across re-renders: every one starts at the phase the clock says (see NOW() in tracker.js) */
+.sp *,.sp *::before,.sp *::after{animation-delay:calc(var(--now,0) * -1s)!important}
+.sp .sp-weather i{animation-delay:calc(var(--now,0) * -1s - var(--d))!important}
+.sp .sp-stat .sp-i{animation-delay:calc(var(--now,0) * -1s - var(--d))!important}
+.sp .sp-pop{animation-delay:0s!important}

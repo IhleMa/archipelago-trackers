@@ -10,6 +10,9 @@
    "ready now" is exact. Data: data/s2.json (levels, check kinds from the world), data/icons.json (drawn for this tracker). */
 (() => {
   const esc = APTracker.esc;
+  // animations restart whenever the page re-renders (every new check or item): start each at the phase the clock says
+  // it's in, so a re-render carries on smoothly instead of jumping back to the first frame
+  const NOW = () => (Date.now() / 1000 % 86400).toFixed(2);
   let D = null, IC = {};
   const HOME_STYLE = { "Summer Forest":["tree", "summer"], "Autumn Plains":["leaf", "autumn"], "Winter Tundra":["snow", "winter"] };
   const GOALS = { 0:"Defeat Ripto", 3:"Collect 64 orbs", 4:"100% completion", 5:"Ten Dragon Shores tokens", 6:"Every skill point", 7:"The epilogue", 8:"Orb hunt" };
@@ -112,7 +115,7 @@
   }
   function renderAvalar(t){
     const m = model(t);
-    let html = `<div class="sp">${banner(t, m)}<div class="sp-islands">${Object.entries(D.home).map(([h, l]) => island(t, m, h, l)).join("")}</div>
+    let html = `<div class="sp" style="--now:${NOW()}">${banner(t, m)}<div class="sp-islands">${Object.entries(D.home).map(([h, l]) => island(t, m, h, l)).join("")}</div>
       <p class="sp-legend"><span class="go">swirling bright: something ready now</span><span class="full">gold: level done</span><span class="shut">stone: needs its key</span><span>hover or tap a portal to see its checks</span></p>`;
     // every ready check, level by level
     if(m.haveLogic){
@@ -147,7 +150,7 @@
       ["gem", "Sparx gem finder", o.sparx_gem_finder === 1 ? t.has("Sparx Gem Finder") : null, "Sparx Gem Finder"],
       ["heart", "Extra hit point", o.extra_hit_point ? t.has("Extra Hit Point") : null, "Extra Hit Point"]].filter(x => x[2] !== "off");
     const inv = m.byLevel.get("Inventory") || [];
-    return `<div class="sp">${banner(t, m)}<div class="sp-stats">${tiles}</div>
+    return `<div class="sp" style="--now:${NOW()}">${banner(t, m)}<div class="sp-stats">${tiles}</div>
       <section class="sp-panel"><h3>${icon("wings", 30)}Moves &amp; powers</h3><div class="sp-moves">${moves.map(([ic, label, v, item]) => {
         const on = v === true || (typeof v === "number" && v > 0), vanilla = v === null;
         return `<div class="sp-move ${ic}${on ? " on" : vanilla ? " vanilla" : ""}"${!on && !vanilla ? t.hint([item], label) : ""}>${icon(ic, 40)}<b>${label}</b><span>${vanilla ? "as in the game" : typeof v === "number" ? `level ${v}` : on ? "yours" : "not yet"}</span></div>`; }).join("")}</div></section>
@@ -167,7 +170,7 @@
   }
   function renderLevels(t){
     const m = model(t);
-    let html = `<div class="sp">${banner(t, m)}`;
+    let html = `<div class="sp" style="--now:${NOW()}">${banner(t, m)}`;
     for(const [home, levels] of Object.entries(D.home)){
       html += `<section class="sp-world ${HOME_STYLE[home][1]}"><header>${icon(HOME_STYLE[home][0], 36)}<div><h3>${esc(home)}</h3></div></header><div class="sp-cards">`;
       for(const lv of [home, ...levels]){

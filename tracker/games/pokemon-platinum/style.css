@@ -254,3 +254,8 @@
 .pp-cart[data-hint]:hover{color:var(--tx)}
 
 @media (prefers-reduced-motion:reduce){.pp *,.pp *::before,.pp *::after,.pp-card::after{animation:none!important}}
+
+/* keep animations in step across re-renders: every one starts at the phase the clock says (see NOW() in tracker.js) */
+.pp *,.pp *::before,.pp *::after{animation-delay:calc(var(--now,0) * -1s)!important}
+.pp .pp-badge.on svg{animation-delay:calc(var(--now,0) * -1s - var(--d))!important}
+.pp .pp-pop{animation-delay:0s!important}

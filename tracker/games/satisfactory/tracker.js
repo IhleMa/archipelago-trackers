@@ -10,6 +10,9 @@
 (() => {
   let D = null;
   const esc = APTracker.esc;
+  // animations restart whenever the page re-renders (every new check or item): start each at the phase the clock says
+  // it's in, so a re-render carries on smoothly instead of jumping back to the first frame
+  const NOW = () => (Date.now() / 1000 % 86400).toFixed(2);
   const PROD_ORDER = ["Smelter", "Constructor", "Foundry", "Assembler", "Manufacturer", "Refinery", "Packager", "Blender",
     "Particle Accelerator", "Converter", "Quantum Encoder", "Equipment Workshop"];
   const BUILDING_GROUPS = [
@@ -170,7 +173,7 @@
         return `<div class="sf-tier full">${head}<span class="sf-pills">${Object.keys(prog).map(k => `<i>${icon("check", 12)}${tier}-${k}</i>`).join("")}</span></div></div>`;
       return `<div class="sf-tier">${head}</div><div class="sf-mss">${cards}</div></div>`;
     }).join("");
-    return `<div class="sf">${header(t, m)}
+    return `<div class="sf" style="--now:${NOW()}">${header(t, m)}
       ${sec("Project goal", (goals.length > 1 ? `<span class="sf-dim">${opts.GoalRequirement === 1 ? "Complete all of these" : "Complete any one of these"}</span>` : "") + `<div class="sf-goals">${goalCards || '<span class="sf-dim">Goal not shared by this slot</span>'}</div>`, "", "trophy")}
       ${sec("The HUB", tiers, `${m.haveLogic ? "Blinking lamp: checks you can do now · " : ""}lit part: you can make it${t.isMine ? " · click an unlit part for a hint" : ""}`, "hub")}
     </div>`;
@@ -197,7 +200,7 @@
     const gear = [...D.groups.Equipment.filter(n => !/Cup|Statue|golden|gold\)/i.test(n)), ...D.groups.Vehicles, ...D.groups.Trains, ...D.groups.Upgrades].filter(n => t.itemNames.includes(n));
     const gearHtml = gear.map(n => { const label = n.replace(/^(Bundle|Single|Transport): /, ""), k = t.count(n);
       return `<span class="sf-chip${k ? " on" : ""}"${k ? "" : t.hint(n, label)}>${esc(label)}${k > 1 ? ` ×${k}` : ""}</span>`; }).join("");
-    return `<div class="sf">${header(t, m)}
+    return `<div class="sf" style="--now:${NOW()}">${header(t, m)}
       ${sec("Production", `<div class="sf-machines">${machines}</div>`, `Gear turning: the building is unlocked and making something · lit part: you can make it${t.isMine ? " · click a part to hint a recipe" : ""}`, "gear")}
       ${sec("Buildings", `<div class="sf-bcats">${bHtml}</div>`, "", "hub")}
       ${sec("Equipment & vehicles", gearHtml && `<div class="sf-chips">${gearHtml}</div>`, "", "crate")}
@@ -220,7 +223,7 @@
     }).join("");
     const drives = m.drives.length ? `<div class="sf-drives">${m.drives.map((l, i) => `<span class="sf-drive ${l.done ? "on" : l.ready ? "go" : ""}" title="Hard drive ${i + 1}${l.done ? ": found" : l.ready ? ": in reach" : ""}">${icon("drive", 18)}</span>`).join("")}</div>` : "";
     const shop = m.shop.length ? `<div class="sf-coupons">${m.shop.map((l, i) => `<span class="sf-coupon ${l.done ? "on" : l.ready ? "go" : ""}" title="AWESOME Shop purchase ${i + 1}">${icon("coupon", 22)}<b>${i + 1}</b></span>`).join("")}</div>` : "";
-    return `<div class="sf">${header(t, m)}
+    return `<div class="sf" style="--now:${NOW()}">${header(t, m)}
       ${sec("MAM research", trees && `<div class="sf-trees">${trees}</div>`, [m.haveLogic ? "Glowing: research you can do now" : "", t.isMine ? "click open research to see what it holds" : ""].filter(Boolean).join(" · "), "flask")}
       ${sec("Hard drives", drives, `${m.drives.filter(l => l.done).length} of ${m.drives.length} found${m.haveLogic ? ` · ${m.drives.filter(l => l.ready).length} in reach` : ""}`, "drive")}
       ${sec("AWESOME Shop", shop, `${m.shop.filter(l => l.done).length} of ${m.shop.length} purchases${traps ? ` · ${traps} trap${traps > 1 ? "s" : ""} received` : ""}`, "coupon")}

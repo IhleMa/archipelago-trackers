@@ -8,6 +8,9 @@
    Icons are drawn for this tracker. */
 (() => {
   const esc = APTracker.esc;
+  // animations restart whenever the page re-renders (every new check or item): start each at the phase the clock says
+  // it's in, so a re-render carries on smoothly instead of jumping back to the first frame
+  const NOW = () => (Date.now() / 1000 % 86400).toFixed(2);
   let D = null;
 
   /* ---------- icons (original, 24×24) ---------- */
@@ -131,8 +134,8 @@
   }
   function renderMap(t){
     const m = model(t);
-    if(!m.chars.length) return `<div class="st"><p class="st-note">No character settings in this seed's slot data.</p></div>`;
-    return `<div class="st">${hero(t, m)}${m.chars.map(x => charMap(t, x)).join("")}
+    if(!m.chars.length) return `<div class="st" style="--now:${NOW()}"><p class="st-note">No character settings in this seed's slot data.</p></div>`;
+    return `<div class="st" style="--now:${NOW()}">${hero(t, m)}${m.chars.map(x => charMap(t, x)).join("")}
       <p class="st-legend"><span>${icon("monster", 16)} rooms climb from the bottom of each act to its boss</span><span class="go">glowing: checks you can do right now</span><span class="done">red circle: all done</span></p></div>`;
   }
 
@@ -140,7 +143,7 @@
   function renderDeck(t){
     const m = model(t), sd = t.slotData || {}, shop = sd.shop_sanity_options || {};
     const shopTotal = (shop.card_slots || 0) + (shop.neutral_slots || 0) + (shop.relic_slots || 0) + (shop.potion_slots || 0);
-    let html = `<div class="st">${hero(t, m)}<div class="st-decks">`;
+    let html = `<div class="st" style="--now:${NOW()}">${hero(t, m)}<div class="st-decks">`;
     for(const x of m.chars){
       const c = x.c, p = c.prefix, n = s => t.count(`${p} ${s}`);
       const gold = n("One Gold") + 5 * n("Five Gold") + 15 * n("15 Gold") + 30 * n("30 Gold") + 75 * n("Boss Gold");

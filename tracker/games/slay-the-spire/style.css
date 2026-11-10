@@ -125,3 +125,7 @@
   .st-stamp{flex-direction:row;justify-content:flex-start;padding:8px 10px;gap:10px}
   .st-decks{grid-template-columns:1fr}
 }
+
+/* keep animations in step across re-renders: every one starts at the phase the clock says (see NOW() in tracker.js) */
+.st *,.st *::before,.st *::after{animation-delay:calc(var(--now,0) * -1s)!important}
+

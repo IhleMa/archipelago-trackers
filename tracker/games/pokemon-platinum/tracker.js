@@ -10,6 +10,9 @@
 (() => {
   let D = null;
   const esc = APTracker.esc;
+  // animations restart whenever the page re-renders (every new check or item): start each at the phase the clock says
+  // it's in, so a re-render carries on smoothly instead of jumping back to the first frame
+  const NOW = () => (Date.now() / 1000 % 86400).toFixed(2);
   const BADGE_COLOR = { "Coal Badge":["#7a4a2a","#c07a3a"], "Forest Badge":["#2f7a3a","#7ccf6a"], "Cobble Badge":["#5a6a7a","#a9b9c9"], "Fen Badge":["#2a5aa8","#79b2ff"],
     "Relic Badge":["#8a6a1a","#e6c24a"], "Mine Badge":["#6a6a72","#d6d6de"], "Icicle Badge":["#3a8aa8","#bdf2ff"], "Beacon Badge":["#b8860b","#ffe066"] };
   const BADGE_SHAPE = { // simple original emblems, one per badge
@@ -159,7 +162,7 @@
     const head = `<div class="pp-readyhead${t.goal ? " won" : t.logicGoal ? " goal" : ""}"><div class="pp-bigball" aria-hidden="true"></div>
       <div><b>${!logic ? "Town Map" : t.goal ? "Champion!" : m.ready ? `${m.ready} check${m.ready === 1 ? "" : "s"} you can do right now` : m.left ? "Nothing reachable right now" : "Every check done"}</b>
       <span>${!logic ? noLogic(t) : t.goal ? "You entered the Hall of Fame." : t.logicGoal ? "And the Champion is in reach: you have everything for the Pokémon League." : m.ready ? `In ${places.length} place${places.length === 1 ? "" : "s"}, pulsing on the map · ${m.left} checks left in all` : m.left ? "Wait for more items from the other players, or ask for a hint." : ""}</span></div></div>`;
-    return `<div class="pp">${card(t, m)}${head}${svg}
+    return `<div class="pp" style="--now:${NOW()}">${card(t, m)}${head}${svg}
       <p class="pp-legend"><span class="go">pulsing: checks you can do now</span><span class="done">gold: all done</span>${logic ? `<span class="shut">dim: nothing reachable yet</span>` : ""}<span>hover or tap a place to see its checks</span></p>
       ${list ? sec("Ready now", list, "Every check you can do with what you have, along the map", "ball") : ""}
       ${blocked.length && logic ? sec("Not reachable yet", `<div class="pp-blocked">${blocked.map(([p, v]) => `<span>${esc(p)} <small>${v.left}</small></span>`).join("")}</div>`, "Checks left here need something you don't have yet") : ""}
@@ -187,7 +190,7 @@
     const watchItem = t.itemNames.includes("Poketch"), watchOn = !watchItem || t.has("Poketch");
     const apps = D.poketch.filter(n => n !== "Poketch" && t.itemNames.includes(n)).map(n => `<div class="pp-app${t.has(n) ? " on" : ""}"${t.has(n) ? "" : t.hint(n)}>${esc(n.replace("POKeMON", "POKéMON"))}</div>`).join("");
     const coupons = ["Parcel", "Coupon 1", "Coupon 2", "Coupon 3"].filter(n => t.itemNames.includes(n));
-    return `<div class="pp">${card(t, m)}
+    return `<div class="pp" style="--now:${NOW()}">${card(t, m)}
       ${sec("HMs", hms && `<div class="pp-hms">${hms}</div>`, (removed.has("all") ? "Badge requirements removed" : "Each HM needs its badge" + (needBag ? " and the Bag" : "")) + " (plus a Pokémon that can learn it)" + (t.isMine ? " · click one you can't use yet for a hint" : ""), "ball")}
       ${sec("Pokétch", apps && `<div class="pp-poketch${watchOn ? "" : " off"}"><div class="pp-watch"${watchOn ? "" : t.hint("Poketch")}><span class="pp-btn"></span><div class="pp-lcd">${apps}</div><span class="pp-btn"></span></div>
         ${watchOn ? "" : `<span class="pp-lcdnote">You don't have the Pokétch yet, so these apps can't be used. Click the watch for a hint.</span>`}
@@ -207,7 +210,7 @@
       return `<div class="pp-key fly${on ? " on" : ""}"${on ? "" : t.hint(n)}>${icon("wing", 20)}<span>${esc(n.replace(/ Fly Region$/, ""))}</span></div>`; }).join("") : "";
     const carts = D.cartridges.filter(n => t.itemNames.includes(n)).map(n => { const on = t.has(n);
       return `<div class="pp-cart${on ? " on" : ""}" style="--cc:${CART[n] || "#888"}"${on ? "" : t.hint(n)}><span class="pp-cartbody"><i></i></span><b>${esc(n.replace(/ Cartridge$/, ""))}</b></div>`; }).join("");
-    return `<div class="pp">${card(t, m)}
+    return `<div class="pp" style="--now:${NOW()}">${card(t, m)}
       ${sec("Key items", keys && `<div class="pp-keys">${keys}</div>`, `${have} of ${keyList.length}${t.isMine ? " · click a missing one for a hint" : ""}`, "case")}
       ${sec("Fly destinations", fly && `<div class="pp-keys">${fly}</div>`, "", "wing")}
       ${sec("GBA cartridges", carts && `<div class="pp-carts">${carts}</div>`, "Slot one into the DS to change which Pokémon appear", "cart")}

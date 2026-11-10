@@ -123,3 +123,7 @@
   .ss2-stamp{flex-direction:row;justify-content:flex-start;padding:8px 10px;gap:10px}
   .ss2-decks{grid-template-columns:1fr}
 }
+
+/* keep animations in step across re-renders: every one starts at the phase the clock says (see NOW() in tracker.js) */
+.ss2 *,.ss2 *::before,.ss2 *::after{animation-delay:calc(var(--now,0) * -1s)!important}
+
