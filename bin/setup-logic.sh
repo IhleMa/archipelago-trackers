@@ -6,7 +6,7 @@
 cd "${1:-/home/container}" || exit 0
 PY=relay/python/bin/python3
 [ -x "${PY}" ] || { echo "[tracker] No relay Python, so no exact logic."; exit 0; }
-WORLDS="stardew_valley oot"
+WORLDS="stardew_valley oot satisfactory"
 
 # Which Archipelago is installed: the build's manifest, else the egg's version setting, else the latest release
 V=""

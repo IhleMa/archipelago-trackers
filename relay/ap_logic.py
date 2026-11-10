@@ -23,7 +23,7 @@ import hashlib, importlib, json, traceback, logging, os, shutil, subprocess, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 AP = os.environ.get("AP_SOURCE") or os.path.join(HERE, "ap")
-GAMES = {"Stardew Valley", "Borderlands 2", "Spyro 2", "Ocarina of Time", "Pokemon Platinum", "Slay the Spire", "Slay the Spire II"}
+GAMES = {"Stardew Valley", "Borderlands 2", "Spyro 2", "Ocarina of Time", "Pokemon Platinum", "Slay the Spire", "Slay the Spire II", "Satisfactory"}
 EXTERNAL = {
     "Borderlands 2": {"repo": "EdricY/Bouncy-Loot-God", "path": "worlds/borderlands2", "folder": "borderlands2",
                       "version": lambda sd: str(sd.get("version") or "")},
@@ -178,7 +178,10 @@ ADAPT = {"Spyro 2": {"options": _spyro_options, "after_early": _spyro_after_earl
          # rebuild it several times covering those rolls; checks that depend on them come out as "maybe"
          "Ocarina of Time": {"options": _oot_options, "unsupported": _oot_unsupported, "variant": _oot_variant, "samples": 9},
          # reads its options and every roll back out of slot data, but only when told this is a tracker's rebuild
-         "Pokemon Platinum": {"fake": True}}
+         "Pokemon Platinum": {"fake": True},
+         # rebuilt the way Universal Tracker shows it: in tracker mode the world opens HUB tiers 1-2 and skips the
+         # "early buildings" gates, which depend on placement options that slot data doesn't record
+         "Satisfactory": {"fake": True}}
 
 warnings.filterwarnings("ignore")
 os.environ.setdefault("SKIP_REQUIREMENTS_UPDATE", "1")
